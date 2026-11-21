@@ -1,0 +1,1566 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>WordFlow</title>
+    <link rel="stylesheet" href="./styles/theme.css" />
+    <link rel="stylesheet" href="./styles/editor.css" />
+    <link rel="stylesheet" href="./styles/print.css" />
+  </head>
+  <body>
+    <div class="app-shell" data-mode="docx">
+      <header class="top-bar" role="banner">
+        <div class="menu-row">
+          <div class="brand">
+            <span class="brand-mark" aria-hidden="true">W</span>
+            <span class="brand-name">WordFlow</span>
+            <button
+              type="button"
+              class="btn-more-dots"
+              id="btn-settings"
+              title="Settings"
+              aria-label="Open Settings"
+              aria-haspopup="dialog"
+              aria-expanded="false"
+            >
+              <i data-lucide="ellipsis-vertical" class="lucide-sm"></i>
+            </button>
+          </div>
+
+          <div class="doc-pill" id="doc-pill">
+            <div class="doc-pill-menu-wrap" id="doc-pill-menu-wrap">
+              <button
+                type="button"
+                class="doc-pill-trigger"
+                id="doc-pill-trigger"
+                aria-haspopup="menu"
+                aria-expanded="false"
+                title="Document Actions"
+              >
+                <span class="doc-pill-name" id="doc-pill-name">Untitled.docx</span>
+                <span class="doc-pill-dirty" id="doc-pill-dirty" aria-hidden="true"></span>
+                <i data-lucide="chevron-down" class="lucide-xs"></i>
+              </button>
+
+              <nav class="doc-pill-popover" id="doc-pill-menu" role="menu" aria-label="File actions">
+                <button type="button" class="doc-pill-item" role="menuitem" id="btn-new" title="New Document (Ctrl+N)">
+                  <i data-lucide="file-plus" class="lucide-xs"></i>
+                  <span>New</span>
+                  <span class="doc-pill-shortcut">Ctrl+N</span>
+                </button>
+                <button type="button" class="doc-pill-item" role="menuitem" id="btn-open" title="Open File (Ctrl+O)">
+                  <i data-lucide="folder-open" class="lucide-xs"></i>
+                  <span>Open…</span>
+                  <span class="doc-pill-shortcut">Ctrl+O</span>
+                </button>
+                <div class="doc-pill-divider" role="separator"></div>
+                <button type="button" class="doc-pill-item" role="menuitem" id="btn-save" title="Save (Ctrl+S)">
+                  <i data-lucide="save" class="lucide-xs"></i>
+                  <span>Save</span>
+                  <span class="doc-pill-shortcut">Ctrl+S</span>
+                </button>
+                <button type="button" class="doc-pill-item" role="menuitem" id="btn-save-as" title="Save As (Ctrl+Shift+S)">
+                  <i data-lucide="file-down" class="lucide-xs"></i>
+                  <span>Save As…</span>
+                  <span class="doc-pill-shortcut">Ctrl+Shift+S</span>
+                </button>
+                <div class="convert-menu-wrap" id="convert-menu-wrap">
+                  <button
+                    type="button"
+                    class="doc-pill-item"
+                    role="menuitem"
+                    id="btn-convert"
+                    title="Export / Convert to Another Format"
+                    aria-haspopup="menu"
+                    aria-expanded="false"
+                  >
+                    <i data-lucide="arrow-left-right" class="lucide-xs"></i>
+                    <span>Convert</span>
+                    <i data-lucide="chevron-down" class="lucide-xs doc-pill-subchevron"></i>
+                  </button>
+                  <div class="convert-popover" id="convert-popover" role="menu" aria-label="Convert to format">
+                    <button type="button" class="convert-menu-item" role="menuitem" data-convert-format="docx">
+                      Export as .docx (Word)
+                    </button>
+                    <button type="button" class="convert-menu-item" role="menuitem" data-convert-format="md">
+                      Export as .md (Markdown)
+                    </button>
+                    <button type="button" class="convert-menu-item" role="menuitem" data-convert-format="html">
+                      Export as .html (HTML)
+                    </button>
+                    <button type="button" class="convert-menu-item" role="menuitem" data-convert-format="txt">
+                      Export as .txt (Plain Text)
+                    </button>
+                  </div>
+                </div>
+                <button type="button" class="doc-pill-item" role="menuitem" id="btn-print" title="Print / Export PDF (Ctrl+P)">
+                  <i data-lucide="printer" class="lucide-xs"></i>
+                  <span>Print / PDF</span>
+                  <span class="doc-pill-shortcut">Ctrl+P</span>
+                </button>
+                <div class="doc-pill-divider" role="separator"></div>
+                <button type="button" class="doc-pill-item" role="menuitem" id="btn-close" title="Close Document (Ctrl+W)">
+                  <i data-lucide="file-x" class="lucide-xs"></i>
+                  <span>Close</span>
+                  <span class="doc-pill-shortcut">Ctrl+W</span>
+                </button>
+              </nav>
+            </div>
+          </div>
+
+          <div class="header-right-actions">
+            <div class="mode-switch" role="tablist" aria-label="Document format mode">
+              <button
+                type="button"
+                class="mode-btn is-active"
+                id="mode-docx"
+                role="tab"
+                aria-selected="true"
+                data-mode-target="docx"
+                title="Word Rich Text (.docx)"
+              >
+                .docx (Word)
+              </button>
+              <button
+                type="button"
+                class="mode-btn"
+                id="mode-md"
+                role="tab"
+                aria-selected="false"
+                data-mode-target="md"
+                title="Markdown Source (.md)"
+              >
+                .md (Markdown)
+              </button>
+              <button
+                type="button"
+                class="mode-btn"
+                id="mode-html"
+                role="tab"
+                aria-selected="false"
+                data-mode-target="html"
+                title="HTML Source (.html)"
+              >
+                .html (HTML)
+              </button>
+              <button
+                type="button"
+                class="mode-btn"
+                id="mode-txt"
+                role="tab"
+                aria-selected="false"
+                data-mode-target="txt"
+                title="Plain Text (.txt)"
+              >
+                .txt (Plain Text)
+              </button>
+            </div>
+            <button
+              type="button"
+              class="btn-header-icon"
+              id="btn-inspector-toggle"
+              title="Toggle Tools &amp; Inspector (Ctrl+Shift+I)"
+              aria-label="Toggle Tools and Inspector"
+              aria-pressed="false"
+            >
+              <i data-lucide="panel-right" class="lucide-sm"></i>
+            </button>
+          </div>
+        </div>
+
+        <div class="format-toolbar dock-zone" id="dock-top" data-dock="top" role="toolbar" aria-label="Formatting tools">
+          <div class="toolbar-group" data-toolbar-id="edit" data-title="Edit">
+            <button type="button" class="fmt-btn" data-cmd="undo" title="Undo (Ctrl+Z)" aria-label="Undo">
+              <i data-lucide="undo-2" class="lucide-sm"></i>
+            </button>
+            <button type="button" class="fmt-btn" data-cmd="redo" title="Redo (Ctrl+Y)" aria-label="Redo">
+              <i data-lucide="redo-2" class="lucide-sm"></i>
+            </button>
+            <button type="button" class="fmt-btn" id="btn-copy" title="Copy (Ctrl+C)" aria-label="Copy">
+              <i data-lucide="copy" class="lucide-sm"></i>
+            </button>
+            <button type="button" class="fmt-btn" id="btn-paste" title="Paste (Ctrl+V)" aria-label="Paste">
+              <i data-lucide="file-down" class="lucide-sm"></i>
+            </button>
+            <button type="button" class="fmt-btn" id="btn-find-replace" title="Find &amp; Replace (Ctrl+F)" aria-label="Find and Replace">
+              <i data-lucide="search" class="lucide-sm"></i>
+            </button>
+          </div>
+
+          <span class="toolbar-divider" aria-hidden="true"></span>
+
+          <div class="toolbar-group" data-rich-only="true" data-toolbar-id="font" data-title="Font">
+            <select
+              id="font-family-select"
+              class="fmt-select"
+              aria-label="Font Family"
+              title="Font Family"
+            >
+              <option value="Georgia">Georgia</option>
+            </select>
+            <select
+              id="font-size-select"
+              class="fmt-select fmt-select-compact"
+              aria-label="Font Size"
+              title="Font Size"
+            >
+              <option value="8pt">8pt</option>
+              <option value="9pt">9pt</option>
+              <option value="10pt">10pt</option>
+              <option value="11pt">11pt</option>
+              <option value="12pt" selected>12pt</option>
+              <option value="14pt">14pt</option>
+              <option value="16pt">16pt</option>
+              <option value="18pt">18pt</option>
+              <option value="20pt">20pt</option>
+              <option value="22pt">22pt</option>
+              <option value="24pt">24pt</option>
+              <option value="26pt">26pt</option>
+              <option value="28pt">28pt</option>
+              <option value="36pt">36pt</option>
+              <option value="48pt">48pt</option>
+              <option value="72pt">72pt</option>
+              <option value="96pt">96pt</option>
+            </select>
+          </div>
+
+          <span class="toolbar-divider" aria-hidden="true"></span>
+
+          <div class="toolbar-group" data-rich-only="true" data-toolbar-id="headings" data-title="Styles">
+            <div class="styles-menu-wrap" id="styles-menu-wrap">
+              <button
+                type="button"
+                class="fmt-btn styles-toggle-btn"
+                id="btn-styles-menu"
+                title="Text Style"
+                aria-haspopup="true"
+                aria-expanded="false"
+              >
+                <span class="styles-toggle-label" id="styles-toggle-label">Paragraph</span>
+                <i data-lucide="chevron-down" class="lucide-xs"></i>
+              </button>
+              <div class="styles-popover" id="styles-popover" role="menu" aria-label="Text styles">
+                <button type="button" class="style-preview-item style-preview-p is-active" data-block="P" role="menuitem">
+                  Paragraph
+                </button>
+                <button type="button" class="style-preview-item style-preview-h1" data-block="H1" role="menuitem">
+                  Heading 1
+                </button>
+                <button type="button" class="style-preview-item style-preview-h2" data-block="H2" role="menuitem">
+                  Heading 2
+                </button>
+                <button type="button" class="style-preview-item style-preview-h3" data-block="H3" role="menuitem">
+                  Heading 3
+                </button>
+                <div class="styles-custom-list" id="styles-custom-list"></div>
+                <div class="styles-popover-divider" aria-hidden="true"></div>
+                <button type="button" class="styles-editor-trigger" id="btn-open-style-editor" role="menuitem">
+                  <i data-lucide="sliders-horizontal" class="lucide-xs"></i>
+                  <span>Style Editor…</span>
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <span class="toolbar-divider" aria-hidden="true"></span>
+
+          <div class="toolbar-group" data-rich-only="true" data-toolbar-id="style" data-title="Style">
+            <button type="button" class="fmt-btn fmt-bold" data-cmd="bold" title="Bold (Ctrl+B)" aria-label="Bold">
+              <i data-lucide="bold" class="lucide-sm"></i>
+            </button>
+            <button type="button" class="fmt-btn fmt-italic" data-cmd="italic" title="Italic (Ctrl+I)" aria-label="Italic">
+              <i data-lucide="italic" class="lucide-sm"></i>
+            </button>
+            <button type="button" class="fmt-btn fmt-underline" data-cmd="underline" title="Underline (Ctrl+U)" aria-label="Underline">
+              <i data-lucide="underline" class="lucide-sm"></i>
+            </button>
+            <button type="button" class="fmt-btn fmt-strike" data-cmd="strikeThrough" title="Strikethrough" aria-label="Strikethrough">
+              <i data-lucide="strikethrough" class="lucide-sm"></i>
+            </button>
+            <div class="color-picker-wrap" id="text-color-wrap">
+              <button
+                type="button"
+                class="fmt-btn color-toggle-btn"
+                id="btn-text-color"
+                title="Text Colour"
+                aria-haspopup="true"
+                aria-expanded="false"
+              >
+                <span class="color-picker-btn">
+                  <span class="color-letter">A</span>
+                  <span class="color-indicator"></span>
+                </span>
+              </button>
+              <div class="color-popover" id="text-color-popover" role="dialog" aria-label="Text colour">
+                <button type="button" class="color-auto-row" id="btn-color-auto">
+                  <span class="color-auto-box"></span>
+                  <span>Automatic</span>
+                </button>
+                <div class="color-section-label">Standard Colors</div>
+                <div class="color-swatches-grid" id="color-swatches-grid"></div>
+                <label class="color-custom-row" title="Custom Colour">
+                  <span>Custom…</span>
+                  <input
+                    type="color"
+                    id="text-color-input"
+                    class="color-input-hidden"
+                    value="#1a1a1a"
+                    aria-label="Custom Text Colour"
+                  />
+                </label>
+              </div>
+            </div>
+          </div>
+
+          <span class="toolbar-divider" aria-hidden="true"></span>
+
+          <div class="toolbar-group" data-rich-only="true" data-toolbar-id="align" data-title="Align">
+            <button type="button" class="fmt-btn" data-cmd="justifyLeft" title="Align Left" aria-label="Align Left">
+              <i data-lucide="text-align-start" class="lucide-sm"></i>
+            </button>
+            <button type="button" class="fmt-btn" data-cmd="justifyCenter" title="Align Centre" aria-label="Align Centre">
+              <i data-lucide="text-align-center" class="lucide-sm"></i>
+            </button>
+            <button type="button" class="fmt-btn" data-cmd="justifyRight" title="Align Right" aria-label="Align Right">
+              <i data-lucide="text-align-end" class="lucide-sm"></i>
+            </button>
+            <button type="button" class="fmt-btn" data-cmd="justifyFull" title="Justify" aria-label="Justify">
+              <i data-lucide="text-align-justify" class="lucide-sm"></i>
+            </button>
+            <button
+              type="button"
+              class="fmt-btn"
+              id="btn-bottom-border"
+              data-action="bottom-border"
+              title="Toggle Bottom Border Separator"
+              aria-label="Toggle Bottom Border Separator"
+            >
+              <i data-lucide="minus" class="lucide-sm"></i>
+            </button>
+          </div>
+
+          <span class="toolbar-divider" aria-hidden="true"></span>
+
+          <div class="toolbar-group" data-rich-only="true" data-toolbar-id="layout" data-title="Layout">
+            <select
+              id="line-spacing-select"
+              class="fmt-select fmt-select-compact"
+              aria-label="Line Spacing"
+              title="Line Spacing"
+            >
+              <option value="1.0">1.0×</option>
+              <option value="1.15" selected>1.15×</option>
+              <option value="1.5">1.5×</option>
+              <option value="2.0">2.0×</option>
+            </select>
+            <select
+              id="page-margins-select"
+              class="fmt-select"
+              aria-label="Page Margins"
+              title="Page Margins"
+            >
+              <option value="1" selected>Normal (1 in)</option>
+              <option value="0.5">Narrow (0.5 in)</option>
+              <option value="1.5">Wide (1.5 in)</option>
+            </select>
+          </div>
+
+          <span class="toolbar-divider" aria-hidden="true"></span>
+
+          <div class="toolbar-group" data-rich-only="true" data-toolbar-id="lists" data-title="Lists">
+            <button type="button" class="fmt-btn" data-cmd="insertUnorderedList" title="Bullet List" aria-label="Bullet List">
+              <i data-lucide="list" class="lucide-sm"></i>
+            </button>
+            <button type="button" class="fmt-btn" data-cmd="insertOrderedList" title="Numbered List" aria-label="Numbered List">
+              <i data-lucide="list-ordered" class="lucide-sm"></i>
+            </button>
+            <button type="button" class="fmt-btn" data-block="BLOCKQUOTE" title="Blockquote" aria-label="Blockquote">
+              <i data-lucide="quote" class="lucide-sm"></i>
+            </button>
+            <button type="button" class="fmt-btn" data-block="PRE" title="Code Block" aria-label="Code Block">
+              <i data-lucide="square-code" class="lucide-sm"></i>
+            </button>
+          </div>
+
+          <span class="toolbar-divider" aria-hidden="true"></span>
+
+          <div class="toolbar-group" data-rich-only="true" data-toolbar-id="clear" data-title="Clear">
+            <button type="button" class="fmt-btn" data-cmd="removeFormat" title="Clear Formatting" aria-label="Clear Formatting">
+              <i data-lucide="remove-formatting" class="lucide-sm"></i>
+            </button>
+          </div>
+
+          <span class="toolbar-divider" aria-hidden="true"></span>
+
+          <div class="toolbar-group" data-rich-only="true" data-toolbar-id="insert" data-title="Insert">
+            <div class="table-insert-wrap" id="table-insert-wrap">
+              <button type="button" class="fmt-btn" id="btn-insert-table" title="Insert Table">
+                <i data-lucide="table" class="lucide-sm"></i>
+                <span>Table</span>
+              </button>
+              <div class="table-popover" id="table-insert-popover" role="dialog" aria-label="Insert table">
+                <div class="table-popover-row">
+                  <label for="table-rows-input">Rows</label>
+                  <input type="number" id="table-rows-input" min="1" max="20" value="3" />
+                </div>
+                <div class="table-popover-row">
+                  <label for="table-cols-input">Cols</label>
+                  <input type="number" id="table-cols-input" min="1" max="12" value="3" />
+                </div>
+                <button type="button" class="btn-insert-confirm" id="btn-confirm-table">Insert Table</button>
+              </div>
+            </div>
+            <div class="shapes-insert-wrap" id="shapes-insert-wrap">
+              <button type="button" class="fmt-btn" id="btn-insert-shape" title="Insert Shape">
+                <i data-lucide="shapes" class="lucide-sm"></i>
+                <span>Shapes</span>
+                <i data-lucide="chevron-down" class="lucide-xs"></i>
+              </button>
+              <div class="shapes-popover" id="shapes-popover" role="menu" aria-label="Insert shape">
+                <button type="button" class="shape-menu-item" data-shape-type="rect">
+                  <i data-lucide="square" class="lucide-xs"></i>
+                  <span>Rectangle</span>
+                </button>
+                <button type="button" class="shape-menu-item" data-shape-type="rounded-rect">
+                  <i data-lucide="square" class="lucide-xs"></i>
+                  <span>Rounded Rectangle</span>
+                </button>
+                <button type="button" class="shape-menu-item" data-shape-type="ellipse">
+                  <i data-lucide="circle" class="lucide-xs"></i>
+                  <span>Oval</span>
+                </button>
+                <button type="button" class="shape-menu-item" data-shape-type="triangle">
+                  <i data-lucide="triangle" class="lucide-xs"></i>
+                  <span>Triangle</span>
+                </button>
+                <button type="button" class="shape-menu-item" data-shape-type="right-triangle">
+                  <i data-lucide="triangle" class="lucide-xs"></i>
+                  <span>Right Triangle</span>
+                </button>
+                <button type="button" class="shape-menu-item" data-shape-type="diamond">
+                  <i data-lucide="diamond" class="lucide-xs"></i>
+                  <span>Diamond</span>
+                </button>
+                <button type="button" class="shape-menu-item" data-shape-type="pentagon">
+                  <i data-lucide="hexagon" class="lucide-xs"></i>
+                  <span>Pentagon</span>
+                </button>
+                <button type="button" class="shape-menu-item" data-shape-type="hexagon">
+                  <i data-lucide="hexagon" class="lucide-xs"></i>
+                  <span>Hexagon</span>
+                </button>
+                <button type="button" class="shape-menu-item" data-shape-type="star">
+                  <i data-lucide="star" class="lucide-xs"></i>
+                  <span>Star</span>
+                </button>
+                <button type="button" class="shape-menu-item" data-shape-type="block-arrow">
+                  <i data-lucide="arrow-up-right" class="lucide-xs"></i>
+                  <span>Block Arrow</span>
+                </button>
+                <button type="button" class="shape-menu-item" data-shape-type="callout">
+                  <i data-lucide="message-square" class="lucide-xs"></i>
+                  <span>Callout</span>
+                </button>
+                <button type="button" class="shape-menu-item" data-shape-type="plus">
+                  <i data-lucide="plus" class="lucide-xs"></i>
+                  <span>Cross / Plus</span>
+                </button>
+                <div class="doc-pill-divider" role="separator"></div>
+                <button type="button" class="shape-menu-item" data-shape-type="line">
+                  <i data-lucide="minus" class="lucide-xs"></i>
+                  <span>Line</span>
+                </button>
+                <button type="button" class="shape-menu-item" data-shape-type="arrow">
+                  <i data-lucide="arrow-up-right" class="lucide-xs"></i>
+                  <span>Arrow</span>
+                </button>
+                <button type="button" class="shape-menu-item" data-shape-type="path">
+                  <i data-lucide="pencil" class="lucide-xs"></i>
+                  <span>Path</span>
+                </button>
+              </div>
+            </div>
+            <button
+              type="button"
+              class="fmt-btn"
+              id="btn-shape-marquee"
+              title="Select Shapes (Right-swipe: Inside • Left-swipe: Crossing • or Alt+Drag)"
+              aria-pressed="false"
+            >
+              <i data-lucide="box-select" class="lucide-sm"></i>
+              <span>Select</span>
+            </button>
+            <button type="button" class="fmt-btn" id="btn-insert-image" title="Insert Image">
+              <i data-lucide="image" class="lucide-sm"></i>
+              <span>Image</span>
+            </button>
+            <input type="file" id="image-file-input" accept="image/*" hidden />
+            <div class="link-insert-wrap" id="link-insert-wrap">
+              <button
+                type="button"
+                class="fmt-btn"
+                id="btn-insert-link"
+                title="Insert / Edit Hyperlink (Ctrl+K)"
+                aria-haspopup="dialog"
+                aria-expanded="false"
+              >
+                <i data-lucide="link" class="lucide-sm"></i>
+                <span>Link</span>
+              </button>
+              <div class="link-popover" id="link-popover" role="dialog" aria-label="Insert hyperlink">
+                <label class="link-popover-field">
+                  <span>URL</span>
+                  <input type="url" id="link-url-input" placeholder="https://example.com" />
+                </label>
+                <label class="link-popover-field">
+                  <span>Display Text</span>
+                  <input type="text" id="link-text-input" placeholder="Link text" />
+                </label>
+                <div class="link-popover-actions">
+                  <button type="button" class="mini-btn is-hidden" id="btn-link-open">Open</button>
+                  <button type="button" class="mini-btn mini-btn-danger is-hidden" id="btn-link-remove">Remove</button>
+                  <button type="button" class="btn-insert-confirm" id="btn-link-apply">Apply</button>
+                </div>
+              </div>
+            </div>
+            <div class="page-menu-wrap" id="page-menu-wrap">
+              <button
+                type="button"
+                class="fmt-btn"
+                id="btn-page-menu"
+                title="Page &amp; Break Tools"
+                aria-haspopup="menu"
+                aria-expanded="false"
+              >
+                <i data-lucide="file-text" class="lucide-sm"></i>
+                <span>Pages</span>
+                <i data-lucide="chevron-down" class="lucide-xs"></i>
+              </button>
+              <div class="page-menu-popover" id="page-menu-popover" role="menu" aria-label="Page tools">
+                <button type="button" class="page-menu-item" role="menuitem" data-page-action="page-break">
+                  <i data-lucide="minus" class="lucide-xs"></i>
+                  <span>Insert Page Break</span>
+                </button>
+                <button type="button" class="page-menu-item" role="menuitem" data-page-action="add-page">
+                  <i data-lucide="file-plus" class="lucide-xs"></i>
+                  <span>Add Blank Page</span>
+                </button>
+                <button type="button" class="page-menu-item" role="menuitem" data-page-action="remove-page-break">
+                  <i data-lucide="x" class="lucide-xs"></i>
+                  <span>Remove Page Break</span>
+                </button>
+                <button type="button" class="page-menu-item" role="menuitem" data-page-action="header-footer">
+                  <i data-lucide="file-text" class="lucide-xs"></i>
+                  <span>Header &amp; Footer…</span>
+                </button>
+              </div>
+            </div>
+            <div class="columns-menu-wrap" id="columns-menu-wrap">
+              <button
+                type="button"
+                class="fmt-btn"
+                id="btn-columns-menu"
+                title="Page &amp; Section Columns"
+                aria-haspopup="menu"
+                aria-expanded="false"
+              >
+                <i data-lucide="columns-2" class="lucide-sm"></i>
+                <span>Columns</span>
+                <i data-lucide="chevron-down" class="lucide-xs"></i>
+              </button>
+              <div class="columns-menu-popover" id="columns-menu-popover" role="menu" aria-label="Column layout">
+                <button type="button" class="page-menu-item" role="menuitem" data-columns-action="doc:1">
+                  <i data-lucide="square" class="lucide-xs"></i>
+                  <span>1 Column (Full Width)</span>
+                </button>
+                <button type="button" class="page-menu-item" role="menuitem" data-columns-action="doc:2">
+                  <i data-lucide="columns-2" class="lucide-xs"></i>
+                  <span>2 Columns (Document)</span>
+                </button>
+                <button type="button" class="page-menu-item" role="menuitem" data-columns-action="doc:3">
+                  <i data-lucide="columns-3" class="lucide-xs"></i>
+                  <span>3 Columns (Document)</span>
+                </button>
+                <div class="doc-pill-divider" role="separator"></div>
+                <button type="button" class="page-menu-item" role="menuitem" data-columns-action="section:2">
+                  <i data-lucide="columns-2" class="lucide-xs"></i>
+                  <span>Insert 2-Column Section</span>
+                </button>
+                <button type="button" class="page-menu-item" role="menuitem" data-columns-action="section:3">
+                  <i data-lucide="columns-3" class="lucide-xs"></i>
+                  <span>Insert 3-Column Section</span>
+                </button>
+                <button type="button" class="page-menu-item" role="menuitem" data-columns-action="section:remove">
+                  <i data-lucide="x" class="lucide-xs"></i>
+                  <span>Remove Column Section</span>
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <span class="toolbar-divider" data-md-only="true" aria-hidden="true"></span>
+
+          <div class="toolbar-group" data-md-only="true" data-toolbar-id="md-headings" data-title="Headings">
+            <button type="button" class="fmt-btn" data-md-action="h1" title="Heading 1 (#)">H1</button>
+            <button type="button" class="fmt-btn" data-md-action="h2" title="Heading 2 (##)">H2</button>
+            <button type="button" class="fmt-btn" data-md-action="h3" title="Heading 3 (###)">H3</button>
+          </div>
+
+          <span class="toolbar-divider" data-md-only="true" aria-hidden="true"></span>
+
+          <div class="toolbar-group" data-md-only="true" data-toolbar-id="md-style" data-title="Style">
+            <button type="button" class="fmt-btn fmt-bold" data-md-action="bold" title="Bold (**text**)" aria-label="Bold">
+              <i data-lucide="bold" class="lucide-sm"></i>
+            </button>
+            <button type="button" class="fmt-btn fmt-italic" data-md-action="italic" title="Italic (*text*)" aria-label="Italic">
+              <i data-lucide="italic" class="lucide-sm"></i>
+            </button>
+            <button type="button" class="fmt-btn fmt-strike" data-md-action="strike" title="Strikethrough (~~text~~)" aria-label="Strikethrough">
+              <i data-lucide="strikethrough" class="lucide-sm"></i>
+            </button>
+            <button type="button" class="fmt-btn" data-md-action="code" title="Inline Code (`code`)" aria-label="Inline Code">
+              <i data-lucide="code" class="lucide-sm"></i>
+            </button>
+          </div>
+
+          <span class="toolbar-divider" data-md-only="true" aria-hidden="true"></span>
+
+          <div class="toolbar-group" data-md-only="true" data-toolbar-id="md-blocks" data-title="Blocks">
+            <button type="button" class="fmt-btn" data-md-action="ul" title="Bullet List (- )" aria-label="Bullet List">
+              <i data-lucide="list" class="lucide-sm"></i>
+            </button>
+            <button type="button" class="fmt-btn" data-md-action="ol" title="Numbered List (1. )" aria-label="Numbered List">
+              <i data-lucide="list-ordered" class="lucide-sm"></i>
+            </button>
+            <button type="button" class="fmt-btn" data-md-action="quote" title="Blockquote (&gt; )" aria-label="Blockquote">
+              <i data-lucide="quote" class="lucide-sm"></i>
+            </button>
+            <button type="button" class="fmt-btn" data-md-action="codeblock" title="Code Block (```)" aria-label="Code Block">
+              <i data-lucide="square-code" class="lucide-sm"></i>
+            </button>
+          </div>
+
+          <span class="toolbar-divider" data-md-only="true" aria-hidden="true"></span>
+
+          <div class="toolbar-group" data-md-only="true" data-toolbar-id="md-insert" data-title="Insert">
+            <button type="button" class="fmt-btn" data-md-action="link" title="Insert Link ([text](url))" aria-label="Insert Link">
+              <i data-lucide="link" class="lucide-sm"></i>
+            </button>
+            <button type="button" class="fmt-btn" data-md-action="hr" title="Horizontal Rule (---)" aria-label="Horizontal Rule">
+              <i data-lucide="minus" class="lucide-sm"></i>
+            </button>
+          </div>
+
+          <span class="toolbar-divider" data-html-only="true" aria-hidden="true"></span>
+
+          <div class="toolbar-group" data-html-only="true" data-toolbar-id="html-tags" data-title="Tags">
+            <button type="button" class="fmt-btn" data-html-action="h1" title="Heading 1 (&lt;h1&gt;)">H1</button>
+            <button type="button" class="fmt-btn" data-html-action="h2" title="Heading 2 (&lt;h2&gt;)">H2</button>
+            <button type="button" class="fmt-btn" data-html-action="h3" title="Heading 3 (&lt;h3&gt;)">H3</button>
+            <button type="button" class="fmt-btn" data-html-action="p" title="Paragraph (&lt;p&gt;)">P</button>
+          </div>
+
+          <span class="toolbar-divider" data-html-only="true" aria-hidden="true"></span>
+
+          <div class="toolbar-group" data-html-only="true" data-toolbar-id="html-style" data-title="Style">
+            <button type="button" class="fmt-btn fmt-bold" data-html-action="bold" title="Bold (&lt;strong&gt;)" aria-label="Bold">
+              <i data-lucide="bold" class="lucide-sm"></i>
+            </button>
+            <button type="button" class="fmt-btn fmt-italic" data-html-action="italic" title="Italic (&lt;em&gt;)" aria-label="Italic">
+              <i data-lucide="italic" class="lucide-sm"></i>
+            </button>
+            <button type="button" class="fmt-btn fmt-underline" data-html-action="underline" title="Underline (&lt;u&gt;)" aria-label="Underline">
+              <i data-lucide="underline" class="lucide-sm"></i>
+            </button>
+            <button type="button" class="fmt-btn fmt-strike" data-html-action="strike" title="Strikethrough (&lt;s&gt;)" aria-label="Strikethrough">
+              <i data-lucide="strikethrough" class="lucide-sm"></i>
+            </button>
+            <button type="button" class="fmt-btn" data-html-action="code" title="Inline Code (&lt;code&gt;)" aria-label="Inline Code">
+              <i data-lucide="code" class="lucide-sm"></i>
+            </button>
+          </div>
+
+          <span class="toolbar-divider" data-html-only="true" aria-hidden="true"></span>
+
+          <div class="toolbar-group" data-html-only="true" data-toolbar-id="html-blocks" data-title="Blocks">
+            <button type="button" class="fmt-btn" data-html-action="ul" title="Bullet List (&lt;ul&gt;)" aria-label="Bullet List">
+              <i data-lucide="list" class="lucide-sm"></i>
+            </button>
+            <button type="button" class="fmt-btn" data-html-action="ol" title="Numbered List (&lt;ol&gt;)" aria-label="Numbered List">
+              <i data-lucide="list-ordered" class="lucide-sm"></i>
+            </button>
+            <button type="button" class="fmt-btn" data-html-action="quote" title="Blockquote (&lt;blockquote&gt;)" aria-label="Blockquote">
+              <i data-lucide="quote" class="lucide-sm"></i>
+            </button>
+            <button type="button" class="fmt-btn" data-html-action="codeblock" title="Code Block (&lt;pre&gt;&lt;code&gt;)" aria-label="Code Block">
+              <i data-lucide="square-code" class="lucide-sm"></i>
+            </button>
+          </div>
+
+          <span class="toolbar-divider" data-html-only="true" aria-hidden="true"></span>
+
+          <div class="toolbar-group" data-html-only="true" data-toolbar-id="html-insert" data-title="Insert">
+            <button type="button" class="fmt-btn" data-html-action="link" title="Insert Link (&lt;a&gt;)" aria-label="Insert Link">
+              <i data-lucide="link" class="lucide-sm"></i>
+            </button>
+            <button type="button" class="fmt-btn" data-html-action="hr" title="Horizontal Rule (&lt;hr /&gt;)" aria-label="Horizontal Rule">
+              <i data-lucide="minus" class="lucide-sm"></i>
+            </button>
+            <button type="button" class="fmt-btn" data-html-action="format" title="Format HTML">
+              <i data-lucide="sparkles" class="lucide-xs"></i>
+              <span>Format</span>
+            </button>
+          </div>
+
+          <span class="toolbar-divider" data-txt-only="true" aria-hidden="true"></span>
+
+          <div class="toolbar-group" data-txt-only="true" data-toolbar-id="txt-case" data-title="Case">
+            <button type="button" class="fmt-btn" data-txt-action="upper" title="UPPERCASE">AA</button>
+            <button type="button" class="fmt-btn" data-txt-action="lower" title="lowercase">aa</button>
+            <button type="button" class="fmt-btn" data-txt-action="title" title="Title Case">Aa</button>
+          </div>
+
+          <span class="toolbar-divider" data-txt-only="true" aria-hidden="true"></span>
+
+          <div class="toolbar-group" data-txt-only="true" data-toolbar-id="txt-indent" data-title="Indent">
+            <button type="button" class="fmt-btn" data-txt-action="ul" title="Bullet List (• )" aria-label="Bullet List">
+              <i data-lucide="list" class="lucide-sm"></i>
+            </button>
+            <button type="button" class="fmt-btn" data-txt-action="ol" title="Numbered List (1. )" aria-label="Numbered List">
+              <i data-lucide="list-ordered" class="lucide-sm"></i>
+            </button>
+            <button type="button" class="fmt-btn" data-txt-action="indent" title="Indent" aria-label="Indent">
+              <i data-lucide="indent-increase" class="lucide-sm"></i>
+            </button>
+            <button type="button" class="fmt-btn" data-txt-action="outdent" title="Outdent" aria-label="Outdent">
+              <i data-lucide="indent-decrease" class="lucide-sm"></i>
+            </button>
+          </div>
+
+          <span class="toolbar-divider" data-txt-only="true" aria-hidden="true"></span>
+
+          <div class="toolbar-group" data-txt-only="true" data-toolbar-id="txt-tools" data-title="Tools">
+            <button type="button" class="fmt-btn" data-txt-action="trim" title="Trim Trailing Spaces">
+              <i data-lucide="scissors" class="lucide-xs"></i>
+              <span>Trim</span>
+            </button>
+            <button type="button" class="fmt-btn" data-txt-action="sort" title="Sort Lines A–Z">
+              <i data-lucide="arrow-down-a-z" class="lucide-xs"></i>
+              <span>Sort</span>
+            </button>
+            <button type="button" class="fmt-btn" data-txt-action="timestamp" title="Insert Date & Time">
+              <i data-lucide="clock" class="lucide-xs"></i>
+              <span>Time</span>
+            </button>
+            <button type="button" class="fmt-btn" data-txt-action="hr" title="Insert Divider Line" aria-label="Insert Divider Line">
+              <i data-lucide="minus" class="lucide-sm"></i>
+            </button>
+          </div>
+        </div>
+
+        <div class="doc-tab-bar" id="doc-tab-bar" aria-label="Open documents"></div>
+      </header>
+
+      <div class="format-warning-banner" id="format-warning-banner" role="alert">
+        <span class="format-warning-text">
+          Editing in plain/Markdown mode will flatten Word font styles.
+        </span>
+        <div class="format-warning-actions">
+          <button type="button" class="btn-undo-switch" id="btn-undo-switch">Undo Switch</button>
+          <button
+            type="button"
+            class="btn-dismiss-warning"
+            id="btn-dismiss-warning"
+            aria-label="Dismiss warning"
+            title="Dismiss"
+          >
+            <i data-lucide="x" class="lucide-xs"></i>
+          </button>
+        </div>
+      </div>
+
+      <div class="find-replace-bar" id="find-replace-bar" role="search" aria-label="Find and Replace" aria-hidden="true">
+        <div class="find-replace-row">
+          <input type="text" id="find-input" class="find-input" placeholder="Find…" aria-label="Find text" />
+          <button type="button" class="mini-btn" id="btn-find-case" title="Match Case" aria-pressed="false">Aa</button>
+          <span class="find-match-count" id="find-match-count"></span>
+          <button type="button" class="mini-btn" id="btn-find-prev" title="Previous Match" aria-label="Previous Match">
+            <i data-lucide="chevron-up" class="lucide-xs"></i>
+          </button>
+          <button type="button" class="mini-btn" id="btn-find-next" title="Next Match" aria-label="Next Match">
+            <i data-lucide="chevron-down" class="lucide-xs"></i>
+          </button>
+          <input type="text" id="replace-input" class="find-input" placeholder="Replace with…" aria-label="Replacement text" />
+          <button type="button" class="mini-btn" id="btn-replace-one">Replace</button>
+          <button type="button" class="mini-btn" id="btn-replace-all">Replace All</button>
+          <button type="button" class="mini-btn" id="btn-find-close" title="Close Find &amp; Replace" aria-label="Close">
+            <i data-lucide="x" class="lucide-xs"></i>
+          </button>
+        </div>
+      </div>
+
+      <div class="hf-edit-bar" id="hf-edit-bar" role="toolbar" aria-label="Header and Footer tools">
+        <span class="hf-edit-label">Header &amp; Footer</span>
+        <label class="hf-toggle-label">
+          <span>Header Pos</span>
+          <select id="hf-header-valign" class="fmt-select fmt-select-compact" aria-label="Header vertical alignment">
+            <option value="top">Top</option>
+            <option value="middle">Middle</option>
+            <option value="bottom" selected>Bottom</option>
+          </select>
+        </label>
+        <label class="hf-toggle-label">
+          <input type="checkbox" id="hf-page-numbers" checked />
+          <span>Page Numbers</span>
+        </label>
+        <label class="hf-toggle-label">
+          <input type="checkbox" id="hf-print-enabled" checked />
+          <span>Print Header &amp; Footer</span>
+        </label>
+        <button type="button" class="mini-btn is-active" id="btn-close-hf">Close Header &amp; Footer</button>
+      </div>
+
+      <div class="workspace-row">
+        <aside class="dock-zone dock-side dock-left" id="dock-left" data-dock="left" aria-label="Left toolbar dock"></aside>
+        <main class="workspace" id="workspace" data-mode="docx">
+        <div class="table-mini-toolbar" id="table-mini-toolbar" role="toolbar" aria-label="Table actions">
+          <button type="button" class="mini-btn" data-table-action="add-row">+ Row Below</button>
+          <button type="button" class="mini-btn" data-table-action="add-col">+ Column Right</button>
+          <button type="button" class="mini-btn" data-table-action="del-row">Delete Row</button>
+          <button type="button" class="mini-btn" data-table-action="del-col">Delete Column</button>
+          <button type="button" class="mini-btn mini-btn-danger" data-table-action="del-table">Delete Table</button>
+        </div>
+
+        <div class="drop-overlay" id="drop-overlay" aria-hidden="true">
+          <div class="drop-overlay-card">
+            <span class="drop-overlay-title">Drop file to open</span>
+            <span class="drop-overlay-subtitle">Supports .docx, .md, .txt, and .html</span>
+          </div>
+        </div>
+
+        <section class="recent-docs-view" id="recent-docs-view" aria-label="Recent documents"></section>
+
+        <div class="document-container">
+          <div class="page-breaks-layer" id="page-breaks-layer" aria-hidden="true"></div>
+          <div class="page-shapes-behind-layer" id="page-shapes-behind-layer"></div>
+          <div class="page-shapes-layer" id="page-shapes-layer"></div>
+          <div class="shape-mini-toolbar" id="shape-mini-toolbar" role="toolbar" aria-label="Shape actions">
+            <div class="shape-mini-row shape-mini-row-top">
+            <div class="shape-color-dropdown" id="shape-fill-dropdown">
+              <button type="button" class="mini-btn shape-picker-trigger" id="btn-shape-fill">
+                <span>Fill</span>
+                <span class="shape-swatch-bar" id="shape-fill-indicator"></span>
+              </button>
+              <div class="shape-color-popover" id="shape-fill-popover">
+                <button type="button" class="shape-none-btn" data-shape-fill="none">No Fill</button>
+                <div class="shape-swatches-grid" id="shape-fill-grid"></div>
+                <label class="color-custom-row" title="Custom Fill Colour">
+                  <span>Custom…</span>
+                  <input
+                    type="color"
+                    id="shape-fill-custom-input"
+                    class="color-input-hidden"
+                    value="#ffffff"
+                    aria-label="Custom Fill Colour"
+                  />
+                </label>
+              </div>
+            </div>
+
+            <div class="shape-color-dropdown" id="shape-border-dropdown">
+              <button type="button" class="mini-btn shape-picker-trigger" id="btn-shape-border">
+                <span id="shape-border-label">Border</span>
+                <span class="shape-swatch-bar" id="shape-border-indicator"></span>
+              </button>
+              <div class="shape-color-popover" id="shape-border-popover">
+                <button type="button" class="shape-none-btn" id="btn-shape-border-none" data-shape-border="none">No Border</button>
+                <div class="shape-swatches-grid" id="shape-border-grid"></div>
+                <label class="color-custom-row" title="Custom Border Colour">
+                  <span>Custom…</span>
+                  <input
+                    type="color"
+                    id="shape-border-custom-input"
+                    class="color-input-hidden"
+                    value="#1a1a1a"
+                    aria-label="Custom Border Colour"
+                  />
+                </label>
+                <div class="shape-border-section">
+                  <span class="shape-border-label">Thickness</span>
+                  <div class="shape-border-options" id="shape-border-widths">
+                    <button type="button" class="shape-opt-btn" data-shape-width="1">1px</button>
+                    <button type="button" class="shape-opt-btn" data-shape-width="2">2px</button>
+                    <button type="button" class="shape-opt-btn" data-shape-width="3">3px</button>
+                    <button type="button" class="shape-opt-btn" data-shape-width="4">4px</button>
+                    <button type="button" class="shape-opt-btn" data-shape-width="6">6px</button>
+                  </div>
+                </div>
+                <div class="shape-border-section">
+                  <span class="shape-border-label">Style</span>
+                  <div class="shape-border-options" id="shape-border-styles">
+                    <button type="button" class="shape-opt-btn" data-shape-style="solid">Solid</button>
+                    <button type="button" class="shape-opt-btn" data-shape-style="dashed">Dashed</button>
+                    <button type="button" class="shape-opt-btn" data-shape-style="dotted">Dotted</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <button type="button" class="mini-btn mini-btn-danger shape-mini-delete" data-shape-delete="true">Delete</button>
+            </div>
+
+            <div class="shape-mini-row shape-mini-row-bottom">
+            <div class="shape-color-dropdown" id="shape-ends-dropdown">
+              <button type="button" class="mini-btn" id="btn-shape-ends">Ends ▾</button>
+              <div class="shape-ends-popover" id="shape-ends-popover">
+                <div class="shape-border-section shape-ends-first">
+                  <span class="shape-border-label">Start</span>
+                  <div class="shape-border-options">
+                    <button type="button" class="shape-opt-btn" data-shape-end="start" data-end-style="none">None</button>
+                    <button type="button" class="shape-opt-btn" data-shape-end="start" data-end-style="arrow">Arrow</button>
+                    <button type="button" class="shape-opt-btn" data-shape-end="start" data-end-style="open">Open</button>
+                    <button type="button" class="shape-opt-btn" data-shape-end="start" data-end-style="dot">Dot</button>
+                    <button type="button" class="shape-opt-btn" data-shape-end="start" data-end-style="diamond">Diamond</button>
+                  </div>
+                </div>
+                <div class="shape-border-section">
+                  <span class="shape-border-label">End</span>
+                  <div class="shape-border-options">
+                    <button type="button" class="shape-opt-btn" data-shape-end="end" data-end-style="none">None</button>
+                    <button type="button" class="shape-opt-btn" data-shape-end="end" data-end-style="arrow">Arrow</button>
+                    <button type="button" class="shape-opt-btn" data-shape-end="end" data-end-style="open">Open</button>
+                    <button type="button" class="shape-opt-btn" data-shape-end="end" data-end-style="dot">Dot</button>
+                    <button type="button" class="shape-opt-btn" data-shape-end="end" data-end-style="diamond">Diamond</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="shape-color-dropdown" id="shape-align-dropdown">
+              <button type="button" class="mini-btn" id="btn-shape-align">Align ▾</button>
+              <div class="shape-align-popover" id="shape-align-popover">
+                <button type="button" class="shape-menu-item" data-shape-align="left">Align Left</button>
+                <button type="button" class="shape-menu-item" data-shape-align="center">Align Center</button>
+                <button type="button" class="shape-menu-item" data-shape-align="right">Align Right</button>
+              </div>
+            </div>
+
+            <div class="shape-color-dropdown" id="shape-wrap-dropdown">
+              <button type="button" class="mini-btn" id="btn-shape-wrap">Wrap ▾</button>
+              <div class="shape-wrap-popover" id="shape-wrap-popover">
+                <button type="button" class="shape-menu-item" data-shape-wrap="square">Square</button>
+                <button type="button" class="shape-menu-item" data-shape-wrap="tight">Tight</button>
+                <button type="button" class="shape-menu-item" data-shape-wrap="top-bottom">Top and Bottom</button>
+                <button type="button" class="shape-menu-item" data-shape-wrap="behind">Behind Text</button>
+                <button type="button" class="shape-menu-item" data-shape-wrap="front">In Front of Text</button>
+              </div>
+            </div>
+
+            <div class="shape-color-dropdown" id="shape-order-dropdown">
+              <button type="button" class="mini-btn" id="btn-shape-order">Order ▾</button>
+              <div class="shape-order-popover" id="shape-order-popover">
+                <button type="button" class="shape-menu-item" data-shape-order="forward">Bring Forward</button>
+                <button type="button" class="shape-menu-item" data-shape-order="backward">Send Backward</button>
+                <button type="button" class="shape-menu-item" data-shape-order="front">Bring to Front</button>
+                <button type="button" class="shape-menu-item" data-shape-order="back">Send to Back</button>
+              </div>
+            </div>
+
+            <div class="shape-color-dropdown" id="shape-corners-dropdown">
+              <button type="button" class="mini-btn" id="btn-shape-corners">Corners ▾</button>
+              <div class="shape-align-popover" id="shape-corners-popover">
+                <button type="button" class="shape-menu-item" data-shape-radius="0">0px (Sharp)</button>
+                <button type="button" class="shape-menu-item" data-shape-radius="4">4px</button>
+                <button type="button" class="shape-menu-item" data-shape-radius="8">8px</button>
+                <button type="button" class="shape-menu-item" data-shape-radius="16">16px</button>
+                <button type="button" class="shape-menu-item" data-shape-radius="24">24px</button>
+              </div>
+            </div>
+
+            <div class="shape-color-dropdown" id="shape-merge-dropdown">
+              <button type="button" class="mini-btn" id="btn-shape-merge">Merge ▾</button>
+              <div class="shape-align-popover" id="shape-merge-popover">
+                <button type="button" class="shape-menu-item" data-shape-merge="union">Union (Add)</button>
+                <button type="button" class="shape-menu-item" data-shape-merge="subtract">Subtract (Remove)</button>
+              </div>
+            </div>
+
+            <div class="shape-color-dropdown" id="shape-size-dropdown">
+              <button type="button" class="mini-btn" id="btn-shape-size">Size ▾</button>
+              <div class="shape-size-popover" id="shape-size-popover">
+                <div class="shape-size-unit-row">
+                  <span class="shape-border-label">Units</span>
+                  <select id="shape-size-unit" class="shape-size-unit-select" aria-label="Dimension units">
+                    <option value="mm" selected>mm</option>
+                    <option value="in">in</option>
+                    <option value="px">px</option>
+                  </select>
+                </div>
+                <div class="shape-size-grid" id="shape-dim-grid">
+                  <label class="shape-size-field">
+                    <span>W</span>
+                    <input type="number" id="shape-dim-w" step="any" min="1" />
+                  </label>
+                  <label class="shape-size-field">
+                    <span>H</span>
+                    <input type="number" id="shape-dim-h" step="any" min="1" />
+                  </label>
+                  <label class="shape-size-field">
+                    <span>X</span>
+                    <input type="number" id="shape-dim-x" step="any" min="0" />
+                  </label>
+                  <label class="shape-size-field">
+                    <span>Y</span>
+                    <input type="number" id="shape-dim-y" step="any" min="0" />
+                  </label>
+                </div>
+                <div class="shape-size-grid is-hidden" id="line-dim-grid">
+                  <label class="shape-size-field">
+                    <span>L</span>
+                    <input type="number" id="line-dim-len" step="any" min="1" />
+                  </label>
+                  <label class="shape-size-field">
+                    <span>°</span>
+                    <input type="number" id="line-dim-ang" step="any" />
+                  </label>
+                  <label class="shape-size-field">
+                    <span>X1</span>
+                    <input type="number" id="line-dim-x1" step="any" min="0" />
+                  </label>
+                  <label class="shape-size-field">
+                    <span>Y1</span>
+                    <input type="number" id="line-dim-y1" step="any" min="0" />
+                  </label>
+                  <div class="line-axis-anchor-row" id="line-axis-anchor-row">
+                    <span class="shape-border-label">Anchor</span>
+                    <div class="line-axis-anchor-btns">
+                      <button type="button" class="mini-btn" id="btn-line-anchor-h" title="Anchor Horizontal (0°)">H</button>
+                      <button type="button" class="mini-btn" id="btn-line-anchor-v" title="Anchor Vertical (90°)">V</button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="shape-color-dropdown" id="shape-spacing-dropdown">
+              <button type="button" class="mini-btn" id="btn-shape-spacing">Spacing ▾</button>
+              <div class="shape-size-popover" id="shape-spacing-popover">
+                <div class="shape-size-unit-row">
+                  <span class="shape-border-label">Relative Gap</span>
+                  <span class="shape-border-label" id="shape-spacing-unit-label">mm</span>
+                </div>
+                <div class="shape-size-grid">
+                  <label class="shape-size-field">
+                    <span>ΔX</span>
+                    <input type="number" id="shape-gap-x" step="any" />
+                  </label>
+                  <label class="shape-size-field">
+                    <span>ΔY</span>
+                    <input type="number" id="shape-gap-y" step="any" />
+                  </label>
+                  <label class="shape-size-field shape-gap-ref-field">
+                    <span>X Ref</span>
+                    <select id="shape-gap-ref-x" class="shape-size-unit-select" aria-label="Horizontal gap reference">
+                      <option value="edge" selected>Edge Gap</option>
+                      <option value="left">Left</option>
+                      <option value="center">Center</option>
+                      <option value="right">Right</option>
+                    </select>
+                  </label>
+                  <label class="shape-size-field shape-gap-ref-field">
+                    <span>Y Ref</span>
+                    <select id="shape-gap-ref-y" class="shape-size-unit-select" aria-label="Vertical gap reference">
+                      <option value="edge" selected>Edge Gap</option>
+                      <option value="top">Top</option>
+                      <option value="middle">Middle</option>
+                      <option value="bottom">Bottom</option>
+                    </select>
+                  </label>
+                </div>
+              </div>
+            </div>
+
+            <label class="mini-btn shape-text-toggle" id="shape-text-toggle" title="Enable text inside shape">
+              <input type="checkbox" id="chk-shape-text" />
+              <span>Text</span>
+            </label>
+
+            <button type="button" class="mini-btn is-hidden" id="btn-shape-crop" title="Crop Image">Crop</button>
+            <button type="button" class="mini-btn is-hidden" id="btn-shape-crop-to" title="Crop Image to Selected Shape">Crop to Shape</button>
+            <button type="button" class="mini-btn is-hidden" id="btn-shape-unmerge" title="Unmerge into Editable Shapes">Unmerge</button>
+            <button type="button" class="mini-btn is-hidden" id="btn-shape-done-merge" title="Finish Editing Merged Shape">Done Merge</button>
+            </div>
+          </div>
+
+          <div id="print-doc-header" class="print-doc-header" aria-hidden="true"></div>
+          <article
+            id="word-editor"
+            class="paper-canvas"
+            contenteditable="true"
+            spellcheck="true"
+            aria-label="Rich text document editor"
+            data-placeholder="Start writing your document..."
+          ></article>
+
+          <textarea
+            id="source-editor"
+            class="markdown-canvas"
+            spellcheck="false"
+            aria-label="Source document editor"
+            placeholder="Start writing..."
+          ></textarea>
+          <pre id="print-source-view" class="print-source-view" aria-hidden="true"></pre>
+          <div id="print-doc-footer" class="print-doc-footer" aria-hidden="true"></div>
+        </div>
+        </main>
+        <button
+          type="button"
+          class="inspector-edge-toggle"
+          id="btn-inspector-edge-toggle"
+          title="Show Tools &amp; Inspector"
+          aria-label="Toggle Tools and Inspector"
+          aria-expanded="false"
+        >
+          <i data-lucide="chevron-left" class="lucide-xs"></i>
+        </button>
+        <aside class="inspector-pane is-collapsed" id="inspector-pane" aria-label="Tools and Inspector" aria-hidden="true">
+          <div class="inspector-header" id="inspector-header">
+            <span class="inspector-title">Tools &amp; Inspector</span>
+            <div class="inspector-header-actions">
+              <button
+                type="button"
+                class="inspector-close-btn"
+                id="btn-inspector-dock-toggle"
+                title="Float / Dock Inspector"
+                aria-label="Toggle Float or Dock"
+              >
+                <i data-lucide="picture-in-picture-2" class="lucide-xs"></i>
+              </button>
+              <button
+                type="button"
+                class="inspector-close-btn"
+                id="btn-inspector-close"
+                title="Close Inspector (Ctrl+Shift+I)"
+                aria-label="Close Inspector"
+              >
+                <i data-lucide="x" class="lucide-xs"></i>
+              </button>
+            </div>
+          </div>
+
+          <div class="inspector-scroll">
+            <section class="inspector-section" data-section-id="tool-tip">
+              <button type="button" class="inspector-section-toggle" aria-expanded="true">
+                <span>Active Tool</span>
+                <i data-lucide="chevron-down" class="lucide-xs"></i>
+              </button>
+              <div class="inspector-section-body">
+                <div class="inspector-tool-title" id="inspector-tool-title">Word Rich Text (.docx)</div>
+                <p class="inspector-tool-tip" id="inspector-tool-tip">
+                  Select text or click an object to inspect and adjust its settings.
+                </p>
+                <div class="inspector-tool-shortcut" id="inspector-tool-shortcut"></div>
+              </div>
+            </section>
+
+            <section class="inspector-section" data-section-id="selection-info">
+              <button type="button" class="inspector-section-toggle" aria-expanded="true">
+                <span>Selection Info</span>
+                <i data-lucide="chevron-down" class="lucide-xs"></i>
+              </button>
+              <div class="inspector-section-body">
+                <div class="inspector-kv">
+                  <span class="inspector-k">Element</span>
+                  <span class="inspector-v" id="inspector-sel-element">Canvas Ready</span>
+                </div>
+                <div class="inspector-kv">
+                  <span class="inspector-k">Selection</span>
+                  <span class="inspector-v" id="inspector-sel-counts">No selection</span>
+                </div>
+                <div class="inspector-kv">
+                  <span class="inspector-k">Style</span>
+                  <span class="inspector-v" id="inspector-sel-font">—</span>
+                </div>
+              </div>
+            </section>
+
+            <section class="inspector-section" data-section-id="selection-settings">
+              <button type="button" class="inspector-section-toggle" aria-expanded="true">
+                <span>Selection Settings</span>
+                <i data-lucide="chevron-down" class="lucide-xs"></i>
+              </button>
+              <div class="inspector-section-body" id="inspector-settings-body"></div>
+            </section>
+
+            <section class="inspector-section" data-section-id="doc-stats">
+              <button type="button" class="inspector-section-toggle" aria-expanded="true">
+                <span>Document &amp; Outline</span>
+                <i data-lucide="chevron-down" class="lucide-xs"></i>
+              </button>
+              <div class="inspector-section-body">
+                <div class="inspector-stats-grid">
+                  <div class="inspector-stat-box">
+                    <span class="inspector-stat-val" id="inspector-doc-words">0</span>
+                    <span class="inspector-stat-lbl">Words</span>
+                  </div>
+                  <div class="inspector-stat-box">
+                    <span class="inspector-stat-val" id="inspector-doc-chars">0</span>
+                    <span class="inspector-stat-lbl">Chars</span>
+                  </div>
+                  <div class="inspector-stat-box">
+                    <span class="inspector-stat-val" id="inspector-doc-read">0 min</span>
+                    <span class="inspector-stat-lbl">Read</span>
+                  </div>
+                </div>
+                <div class="inspector-sublabel">Outline</div>
+                <div class="inspector-outline-list" id="inspector-outline-list"></div>
+              </div>
+            </section>
+          </div>
+        </aside>
+        <aside class="dock-zone dock-side dock-right" id="dock-right" data-dock="right" aria-label="Right toolbar dock"></aside>
+      </div>
+
+      <footer class="status-bar" role="contentinfo">
+        <div class="status-left">
+          <span class="status-item" id="status-filename" title="Current document">Untitled.docx</span>
+          <span class="status-badge" id="status-mode">Mode: Word (.docx)</span>
+        </div>
+
+        <div class="status-right">
+          <span class="status-item" id="status-words">0 words</span>
+          <span class="status-item" id="status-chars">0 chars</span>
+          <div class="zoom-controls" aria-label="Document zoom">
+            <button type="button" class="zoom-btn" id="btn-zoom-out" title="Zoom Out" aria-label="Zoom Out">
+              <i data-lucide="minus" class="lucide-xs"></i>
+            </button>
+            <input
+              type="range"
+              class="zoom-slider"
+              id="zoom-slider"
+              min="50"
+              max="200"
+              step="10"
+              value="100"
+              aria-label="Zoom percentage"
+            />
+            <button type="button" class="zoom-btn" id="btn-zoom-in" title="Zoom In" aria-label="Zoom In">
+              <i data-lucide="plus" class="lucide-xs"></i>
+            </button>
+            <button type="button" class="zoom-value" id="btn-zoom-reset" title="Reset Zoom (100%)">100%</button>
+          </div>
+        </div>
+      </footer>
+    </div>
+
+    <div class="settings-backdrop" id="settings-backdrop" aria-hidden="true"></div>
+    <aside
+      class="settings-drawer"
+      id="settings-drawer"
+      role="dialog"
+      aria-modal="true"
+      aria-label="Settings"
+      aria-hidden="true"
+    >
+      <div class="settings-drawer-header">
+        <span class="settings-drawer-title">Settings</span>
+        <button
+          type="button"
+          class="btn-close-settings"
+          id="btn-close-settings"
+          aria-label="Close Settings"
+          title="Close"
+        >
+          <i data-lucide="x" class="lucide-sm"></i>
+        </button>
+      </div>
+      <div class="settings-drawer-body" id="settings-drawer-body">
+        <div class="settings-row">
+          <label class="settings-label" for="settings-start-in">Start In</label>
+          <select id="settings-start-in" class="settings-select">
+            <option value="start-page">Start Page</option>
+            <option value="document" selected>Document</option>
+          </select>
+        </div>
+        <div class="settings-row">
+          <label class="settings-label" for="settings-default-mode">Default Document Mode</label>
+          <select id="settings-default-mode" class="settings-select">
+            <option value="docx" selected>.docx (Word)</option>
+            <option value="md">.md (Markdown)</option>
+            <option value="html">.html (HTML)</option>
+            <option value="txt">.txt (Plain Text)</option>
+          </select>
+        </div>
+        <div class="settings-row">
+          <label class="settings-label" for="settings-default-font">Default Font</label>
+          <select id="settings-default-font" class="settings-select">
+            <option value="Georgia">Georgia</option>
+          </select>
+        </div>
+        <div class="settings-row">
+          <label class="settings-label" for="settings-default-size">Default Font Size</label>
+          <select id="settings-default-size" class="settings-select">
+            <option value="8pt">8pt</option>
+            <option value="9pt">9pt</option>
+            <option value="10pt">10pt</option>
+            <option value="11pt">11pt</option>
+            <option value="12pt" selected>12pt</option>
+            <option value="14pt">14pt</option>
+            <option value="16pt">16pt</option>
+            <option value="18pt">18pt</option>
+            <option value="20pt">20pt</option>
+            <option value="22pt">22pt</option>
+            <option value="24pt">24pt</option>
+            <option value="26pt">26pt</option>
+            <option value="28pt">28pt</option>
+            <option value="36pt">36pt</option>
+            <option value="48pt">48pt</option>
+            <option value="72pt">72pt</option>
+            <option value="96pt">96pt</option>
+          </select>
+        </div>
+        <div class="settings-row">
+          <label class="settings-label" for="settings-default-zoom">Default Zoom</label>
+          <select id="settings-default-zoom" class="settings-select">
+            <option value="50">50%</option>
+            <option value="60">60%</option>
+            <option value="70">70%</option>
+            <option value="80">80%</option>
+            <option value="90">90%</option>
+            <option value="100" selected>100%</option>
+            <option value="110">110%</option>
+            <option value="120">120%</option>
+            <option value="130">130%</option>
+            <option value="140">140%</option>
+            <option value="150">150%</option>
+            <option value="160">160%</option>
+            <option value="170">170%</option>
+            <option value="180">180%</option>
+            <option value="190">190%</option>
+            <option value="200">200%</option>
+          </select>
+        </div>
+        <div class="settings-row">
+          <label class="settings-label" for="settings-page-size">Page Size</label>
+          <select id="settings-page-size" class="settings-select">
+            <option value="A4" selected>A4 (210 × 297 mm)</option>
+            <option value="Letter">US Letter (8.5 × 11 in)</option>
+            <option value="Legal">US Legal (8.5 × 14 in)</option>
+            <option value="A5">A5 (148 × 210 mm)</option>
+          </select>
+        </div>
+        <div class="settings-row">
+          <label class="settings-label" for="settings-page-orientation">Orientation</label>
+          <select id="settings-page-orientation" class="settings-select">
+            <option value="portrait" selected>Portrait</option>
+            <option value="landscape">Landscape</option>
+          </select>
+        </div>
+        <div class="settings-row">
+          <label class="settings-label" for="settings-tabs-enabled">Document Tabs</label>
+          <input type="checkbox" id="settings-tabs-enabled" class="settings-switch" checked />
+        </div>
+        <div class="settings-row">
+          <label class="settings-label" for="settings-theme">UI Theme</label>
+          <select id="settings-theme" class="settings-select">
+            <option value="light" selected>Light</option>
+            <option value="dark">Dark</option>
+          </select>
+        </div>
+        <div class="settings-row">
+          <span class="settings-label">Bugs &amp; Updates</span>
+          <button type="button" class="settings-footer-btn" id="btn-open-notes">Open Log…</button>
+        </div>
+      </div>
+      <div class="settings-drawer-footer">
+        <span class="settings-version" id="settings-version">v0.1.0</span>
+        <button type="button" class="settings-footer-btn" id="btn-cancel-settings">Cancel</button>
+        <button type="button" class="settings-footer-btn is-primary" id="btn-save-settings">Save</button>
+      </div>
+    </aside>
+
+    <div class="notes-modal-backdrop" id="notes-modal-backdrop" aria-hidden="true"></div>
+    <section
+      class="notes-modal"
+      id="notes-modal"
+      role="dialog"
+      aria-modal="true"
+      aria-label="Bugs and Updates Log"
+      aria-hidden="true"
+    >
+      <div class="notes-modal-header">
+        <span class="settings-drawer-title">Bugs &amp; Updates Log</span>
+        <button type="button" class="settings-close-btn" id="btn-close-notes" title="Close" aria-label="Close">
+          <i data-lucide="x" class="lucide-sm"></i>
+        </button>
+      </div>
+      <div class="notes-modal-body">
+        <textarea
+          id="notes-modal-textarea"
+          class="notes-modal-textarea"
+          placeholder="Record bugs, notes, and updates here..."
+        ></textarea>
+      </div>
+      <div class="notes-modal-footer">
+        <span class="notes-modal-status" id="notes-modal-status"></span>
+        <button type="button" class="settings-footer-btn" id="btn-export-notes">Save As…</button>
+        <button type="button" class="settings-footer-btn is-primary" id="btn-save-notes">Save</button>
+      </div>
+    </section>
+
+    <div class="quit-modal-backdrop" id="quit-modal-backdrop" aria-hidden="true"></div>
+    <section
+      class="quit-modal"
+      id="quit-modal"
+      role="dialog"
+      aria-modal="true"
+      aria-label="Unsaved Changes"
+      aria-hidden="true"
+    >
+      <div class="quit-modal-header">
+        <span class="settings-drawer-title">Unsaved Changes</span>
+      </div>
+      <div class="quit-modal-body">
+        <p class="quit-modal-message" id="quit-modal-message">
+          Do you want to save your changes before quitting?
+        </p>
+      </div>
+      <div class="quit-modal-footer">
+        <button type="button" class="settings-footer-btn" id="btn-quit-cancel">Cancel</button>
+        <button type="button" class="settings-footer-btn" id="btn-quit-discard">Don't Save</button>
+        <button type="button" class="settings-footer-btn is-primary" id="btn-quit-save">Save</button>
+      </div>
+    </section>
+
+    <div class="style-editor-backdrop" id="style-editor-backdrop" aria-hidden="true"></div>
+    <section
+      class="style-editor-modal"
+      id="style-editor-modal"
+      role="dialog"
+      aria-modal="true"
+      aria-label="Style Editor"
+      aria-hidden="true"
+    >
+      <div class="style-editor-header">
+        <span class="settings-drawer-title">Style Editor</span>
+        <button type="button" class="settings-close-btn" id="btn-close-style-editor" title="Close" aria-label="Close">
+          <i data-lucide="x" class="lucide-sm"></i>
+        </button>
+      </div>
+      <div class="style-editor-body">
+        <div class="style-editor-saved-wrap is-hidden" id="style-editor-saved-wrap">
+          <span class="style-editor-field-label">Saved Styles</span>
+          <div class="style-editor-saved-list" id="style-editor-saved-list"></div>
+        </div>
+
+        <div class="style-editor-grid">
+          <div class="style-editor-field style-editor-field-wide">
+            <label class="style-editor-field-label" for="style-editor-name">Style Name</label>
+            <input
+              type="text"
+              id="style-editor-name"
+              class="style-editor-input"
+              placeholder="e.g. Subtitle, Callout, Quote..."
+              maxlength="40"
+            />
+          </div>
+
+          <div class="style-editor-field">
+            <label class="style-editor-field-label" for="style-editor-block">Based On</label>
+            <select id="style-editor-block" class="settings-select style-editor-select">
+              <option value="P" selected>Paragraph</option>
+              <option value="H1">Heading 1</option>
+              <option value="H2">Heading 2</option>
+              <option value="H3">Heading 3</option>
+            </select>
+          </div>
+
+          <div class="style-editor-field">
+            <label class="style-editor-field-label" for="style-editor-font">Font</label>
+            <select id="style-editor-font" class="settings-select style-editor-select"></select>
+          </div>
+
+          <div class="style-editor-field">
+            <label class="style-editor-field-label" for="style-editor-size">Size</label>
+            <select id="style-editor-size" class="settings-select style-editor-select">
+              <option value="8pt">8pt</option>
+              <option value="9pt">9pt</option>
+              <option value="10pt">10pt</option>
+              <option value="11pt">11pt</option>
+              <option value="12pt" selected>12pt</option>
+              <option value="14pt">14pt</option>
+              <option value="16pt">16pt</option>
+              <option value="18pt">18pt</option>
+              <option value="20pt">20pt</option>
+              <option value="22pt">22pt</option>
+              <option value="24pt">24pt</option>
+              <option value="26pt">26pt</option>
+              <option value="28pt">28pt</option>
+              <option value="36pt">36pt</option>
+              <option value="48pt">48pt</option>
+              <option value="72pt">72pt</option>
+              <option value="96pt">96pt</option>
+            </select>
+          </div>
+
+          <div class="style-editor-field">
+            <label class="style-editor-field-label" for="style-editor-color">Colour</label>
+            <div class="style-editor-color-row">
+              <input type="color" id="style-editor-color" class="style-editor-color-input" value="#1a1a1a" />
+              <button type="button" class="style-editor-mini-btn is-active" id="btn-style-color-auto">Auto</button>
+            </div>
+          </div>
+
+          <div class="style-editor-field">
+            <span class="style-editor-field-label">Formatting</span>
+            <div class="style-editor-btn-group">
+              <button type="button" class="fmt-btn fmt-bold" data-style-toggle="bold" title="Bold" aria-label="Bold" aria-pressed="false">
+                <i data-lucide="bold" class="lucide-sm"></i>
+              </button>
+              <button type="button" class="fmt-btn fmt-italic" data-style-toggle="italic" title="Italic" aria-label="Italic" aria-pressed="false">
+                <i data-lucide="italic" class="lucide-sm"></i>
+              </button>
+              <button type="button" class="fmt-btn fmt-underline" data-style-toggle="underline" title="Underline" aria-label="Underline" aria-pressed="false">
+                <i data-lucide="underline" class="lucide-sm"></i>
+              </button>
+              <button type="button" class="fmt-btn fmt-strike" data-style-toggle="strikethrough" title="Strikethrough" aria-label="Strikethrough" aria-pressed="false">
+                <i data-lucide="strikethrough" class="lucide-sm"></i>
+              </button>
+            </div>
+          </div>
+
+          <div class="style-editor-field style-editor-field-wide">
+            <span class="style-editor-field-label">Alignment</span>
+            <div class="style-editor-btn-group">
+              <button type="button" class="fmt-btn is-active" data-style-align="left" title="Align Left" aria-label="Align Left">
+                <i data-lucide="text-align-start" class="lucide-sm"></i>
+              </button>
+              <button type="button" class="fmt-btn" data-style-align="center" title="Align Center" aria-label="Align Center">
+                <i data-lucide="text-align-center" class="lucide-sm"></i>
+              </button>
+              <button type="button" class="fmt-btn" data-style-align="right" title="Align Right" aria-label="Align Right">
+                <i data-lucide="text-align-end" class="lucide-sm"></i>
+              </button>
+              <button type="button" class="fmt-btn" data-style-align="justify" title="Justify" aria-label="Justify">
+                <i data-lucide="text-align-justify" class="lucide-sm"></i>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div class="style-editor-preview-wrap">
+          <span class="style-editor-field-label">Preview</span>
+          <div class="style-editor-preview" id="style-editor-preview">Sample text in this style</div>
+        </div>
+      </div>
+      <div class="style-editor-footer">
+        <span class="style-editor-error" id="style-editor-error"></span>
+        <button type="button" class="settings-footer-btn" id="btn-cancel-style-editor">Cancel</button>
+        <button type="button" class="settings-footer-btn is-primary" id="btn-save-style-editor">Save Style</button>
+      </div>
+    </section>
+
+    <script type="module" src="./main.js"></script>
+  </body>
+</html>

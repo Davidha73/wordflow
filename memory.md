@@ -1,0 +1,13 @@
+## [2026-11-21 / v0.1.0]
+- **Status:**
+  - Added **Default Zoom** (50%–200%) to Settings (`settingsStore.js`, `settingsDrawer.js`, `statusBar.js`, `main.js`).
+  - Added Word-style preview dropdowns (`Paragraph` default, active font via `--active-style-font`) + **Style Editor** modal (`styleEditorModal.js`, `index.html`, `editor.js`, `inspectorPane.js`) with saved custom styles, live preview, clean `<p>` on Return after headings/custom styles, and no `H1` underline.
+  - Added Markdown line style detection (`Heading 1`/`2`/`3`/`Paragraph`) in the Inspector's Selection Info and Selection Settings (`inspectorPane.js`).
+  - Fixed free toolbar dragging (`dockableToolbars.js`) and unified modal/button styles (`editor.css`).
+  - Added macOS native `NSSpellChecker` (`spellcheck.rs`, `Cargo.toml`) and `.grammar-underline-layer` (`grammarHighlights.js`, hidden outside `.docx` mode).
+- **Files Changed:**
+  - `src/index.html`, `src/main.js`, `src/styles/editor.css`
+  - `src/modules/settingsStore.js`, `src/modules/settingsDrawer.js`, `src/modules/statusBar.js`, `src/modules/styleEditorModal.js`
+  - `src/modules/editor.js`, `src/modules/inspectorPane.js`, `src/modules/dockableToolbars.js`, `src/modules/grammarHighlights.js`
+  - `src-tauri/Cargo.toml`, `src-tauri/src/spellcheck.rs`
+- **Next Objectives:** Ready for daily use or further polish/testing as needed.

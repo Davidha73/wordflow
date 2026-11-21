@@ -1,0 +1,149 @@
+@page {
+  size: A4;
+  margin: 2.54cm;
+}
+
+@media print {
+  html,
+  body {
+    height: auto;
+    overflow: visible;
+    background: #ffffff;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  .top-bar,
+  .status-bar,
+  .notes-modal-backdrop,
+  .notes-modal,
+  .format-warning-banner,
+  .find-replace-bar,
+  .hf-edit-bar,
+  .page-sheet-hf-tag,
+  .link-popover,
+  .page-menu-popover,
+  .table-mini-toolbar,
+  .shape-mini-toolbar,
+  .shape-handle,
+  .shape-rotate-handle,
+  .shape-rotate-stem,
+  .shape-dim-line-x,
+  .shape-dim-line-y,
+  .path-draw-overlay,
+  .path-edge-dim-wrap,
+  .path-edge-dim-pill,
+  .path-edge-dim-input,
+  .path-edge-lock-btn,
+  .path-angle-dim-pill,
+  .path-angle-dim-input,
+  .path-corner-rad-popover,
+  .path-vertex-handle,
+  .image-resize-overlay,
+  .svg-diagram-bar,
+  .page-breaks-layer,
+  .markdown-canvas {
+    display: none !important;
+  }
+
+  [data-pb-spaced] {
+    padding-top: 0 !important;
+  }
+
+  .doc-page-break {
+    break-before: page;
+    page-break-before: always;
+    visibility: hidden;
+    height: 0;
+    margin: 0;
+    padding: 0;
+    border: none;
+  }
+
+  .app-shell {
+    display: block;
+    height: auto;
+  }
+
+  .workspace {
+    padding: 0;
+    overflow: visible;
+    display: block;
+  }
+
+  .workspace[data-mode="docx"] .document-container,
+  .document-container {
+    max-width: none;
+    zoom: 1;
+    box-shadow: none;
+    border-radius: 0;
+    background: transparent;
+    overflow: visible;
+  }
+
+  .workspace[data-mode="docx"] .paper-canvas {
+    min-height: 0 !important;
+  }
+
+  .workspace[data-mode="docx"][data-print-hf="true"] .document-container {
+    display: table;
+    width: 100%;
+  }
+
+  .workspace[data-mode="docx"][data-print-hf="true"] .print-doc-header {
+    display: table-header-group !important;
+    font-family: var(--doc-font, Georgia, "Times New Roman", serif);
+    font-size: calc(var(--doc-font-size, 12pt) * 1.07);
+    color: #4b5563;
+  }
+
+  .workspace[data-mode="docx"][data-print-hf="true"] .print-doc-header > * {
+    margin: 0;
+  }
+
+  .workspace[data-mode="docx"][data-print-hf="true"] .print-doc-header {
+    padding-bottom: 0.75rem;
+  }
+
+  .workspace[data-mode="docx"][data-print-hf="true"] .paper-canvas {
+    display: table-row-group;
+    padding: 0 !important;
+  }
+
+  .workspace:not([data-mode="docx"]) .paper-canvas,
+  .workspace:not([data-mode="docx"]) .page-shapes-behind-layer,
+  .workspace:not([data-mode="docx"]) .page-shapes-layer {
+    display: none !important;
+  }
+
+  .workspace:not([data-mode="docx"]) .print-source-view {
+    display: block !important;
+    margin: 0;
+    padding: 0;
+    white-space: pre-wrap;
+    overflow-wrap: break-word;
+    font-family: "Cascadia Code", "Fira Code", Consolas, "Courier New", monospace;
+    font-size: 10.5pt;
+    line-height: 1.55;
+    color: #111827;
+    background: transparent;
+  }
+
+  .page-shapes-behind-layer,
+  .page-shapes-layer {
+    overflow: visible !important;
+  }
+
+  .page-shape.is-selected {
+    outline: none !important;
+  }
+
+  .paper-canvas {
+    display: block !important;
+    box-shadow: none;
+    border-radius: 0;
+    min-height: 297mm;
+    padding: 0;
+    margin: 0;
+  }
+}
