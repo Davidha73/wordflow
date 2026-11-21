@@ -37,8 +37,9 @@ function renderUnderlineOverlay(wordEl, entries) {
       if (r.width < 1 || r.height < 1) continue;
       const mark = document.createElement('span');
       mark.className = markClass;
+      const offsetAboveBottom = Math.max(3 * zoom, r.height * 0.18);
       mark.style.left = `${(r.left - hostRect.left) / zoom}px`;
-      mark.style.top = `${(r.bottom - hostRect.top - 2) / zoom}px`;
+      mark.style.top = `${(r.bottom - hostRect.top - offsetAboveBottom) / zoom}px`;
       mark.style.width = `${r.width / zoom}px`;
       frag.appendChild(mark);
     }

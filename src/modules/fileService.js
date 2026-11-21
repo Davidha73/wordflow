@@ -52,11 +52,72 @@ function replaceExtension(fileName, targetExt) {
   return `${fileName}.${targetExt}`;
 }
 
+const DRAFT_STORAGE_KEY = 'wordflow.recoveryDraft.v1';
+
 export function createFileService({ editor, onStateChange, initialHasOpenDocument = true }) {
   let currentPath = null;
   let isDirty = false;
   let hasOpenDocument = Boolean(initialHasOpenDocument);
   let tabManager = null;
+  let draftTimer = 0;
+
+  function saveRecoveryDraftNow() {
+    if (!hasOpenDocument || !isDirty) return;
+    try {
+      const mode = editor.getMode();
+      const content =
+        mode === 'docx'
+          ? editor.getHtml()
+          : mode === 'md'
+            ? editor.getMarkdown()
+            : editor.getPlainText();
+      if (!content || !content.trim()) return;
+      localStorage.setItem(
+        DRAFT_STORAGE_KEY,
+        JSON.stringify({
+          mode,
+          content,
+          filePath: currentPath,
+          savedAt: Date.now(),
+        })
+      );
+    } catch {
+      // Ignore storage quota errors
+    }
+  }
+
+  function clearRecoveryDraft() {
+    if (draftTimer) {
+      window.clearTimeout(draftTimer);
+      draftTimer = 0;
+    }
+    try {
+      localStorage.removeItem(DRAFT_STORAGE_KEY);
+    } catch {
+      // Ignore storage errors
+    }
+  }
+
+  function getRecoveryDraft() {
+    try {
+      const raw = localStorage.getItem(DRAFT_STORAGE_KEY);
+      if (!raw) return null;
+      const parsed = JSON.parse(raw);
+      return parsed && parsed.content ? parsed : null;
+    } catch {
+      return null;
+    }
+  }
+
+  async function restoreRecoveryDraft() {
+    const draft = getRecoveryDraft();
+    if (!draft) return false;
+    await newDocument();
+    currentPath = draft.filePath || null;
+    editor.loadDocumentContent(draft.mode || 'docx', draft.content);
+    markDirty(true);
+    return true;
+  }
 
   function setTabManager(manager) {
     tabManager = manager;
@@ -103,6 +164,15 @@ export function createFileService({ editor, onStateChange, initialHasOpenDocumen
       isDirty = dirty;
       notify();
     }
+    if (dirty) {
+      if (draftTimer) window.clearTimeout(draftTimer);
+      draftTimer = window.setTimeout(() => {
+        draftTimer = 0;
+        saveRecoveryDraftNow();
+      }, 2000);
+    } else {
+      clearRecoveryDraft();
+    }
   }
 
   async function confirmDiscardIfDirty() {
@@ -135,6 +205,13 @@ export function createFileService({ editor, onStateChange, initialHasOpenDocumen
       return;
     }
     return resetDocument(true);
+  }
+
+  async function newFromTemplate(template) {
+    if (!template?.html) return newDocument();
+    await newDocument();
+    editor.loadDocumentContent('docx', template.html);
+    markDirty(true);
   }
 
   function selectTab(tab) {
@@ -420,6 +497,7 @@ export function createFileService({ editor, onStateChange, initialHasOpenDocumen
     selectTab,
     closeTab,
     newDocument,
+    newFromTemplate,
     closeDocument,
     openDocument,
     openFileByPath,
@@ -427,6 +505,9 @@ export function createFileService({ editor, onStateChange, initialHasOpenDocumen
     exportDocument,
     printDocument,
     markDirty,
+    getRecoveryDraft,
+    clearRecoveryDraft,
+    restoreRecoveryDraft,
     isDirty: () => isDirty,
     hasUnsavedChanges,
     getDirtyFileNames,

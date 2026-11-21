@@ -22,7 +22,7 @@ pub struct GrammarIssue {
     pub suggestions: Vec<String>,
 }
 
-fn check_grammar_sync(text: String) -> Vec<GrammarIssue> {
+fn check_grammar_sync(app: &tauri::AppHandle, text: String) -> Vec<GrammarIssue> {
     if text.trim().is_empty() {
         return Vec::new();
     }
@@ -55,6 +55,11 @@ fn check_grammar_sync(text: String) -> Vec<GrammarIssue> {
                 }
 
                 let problem_text: String = line_chars[start..end].iter().collect();
+                if matches!(lint.lint_kind, LintKind::Spelling)
+                    && crate::spellcheck::is_word_learned(app, &problem_text)
+                {
+                    continue;
+                }
                 let suggestions: Vec<String> = lint
                     .suggestions
                     .iter()
@@ -87,8 +92,8 @@ fn check_grammar_sync(text: String) -> Vec<GrammarIssue> {
 }
 
 #[tauri::command]
-pub async fn check_grammar(text: String) -> Vec<GrammarIssue> {
-    tauri::async_runtime::spawn_blocking(move || check_grammar_sync(text))
+pub async fn check_grammar(app: tauri::AppHandle, text: String) -> Vec<GrammarIssue> {
+    tauri::async_runtime::spawn_blocking(move || check_grammar_sync(&app, text))
         .await
         .unwrap_or_default()
 }

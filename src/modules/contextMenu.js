@@ -14,6 +14,8 @@ export function createContextMenu({
   linkTools,
   onApplyFontFamily,
   onApplyFontSize,
+  onApplyTextColor,
+  onApplyHighlightColor,
   onFindReplace,
   onRichMutate,
   onSourceMutate,
@@ -262,6 +264,56 @@ export function createContextMenu({
       },
     });
     addIconButton(fmtRow, {
+      icon: 'superscript',
+      title: 'Superscript',
+      onSelect: () => {
+        restoreRichRange(savedRange);
+        execFormatCommand('superscript');
+      },
+    });
+    addIconButton(fmtRow, {
+      icon: 'subscript',
+      title: 'Subscript',
+      onSelect: () => {
+        restoreRichRange(savedRange);
+        execFormatCommand('subscript');
+      },
+    });
+    addColorSwatchSubmenu(fmtRow, {
+      kind: 'text',
+      label: 'A',
+      title: 'Text Colour',
+      swatches: [
+        ['Auto', '#1a1a1a'],
+        ['Red', '#C00000'],
+        ['Blue', '#0070C0'],
+        ['Green', '#00B050'],
+        ['Orange', '#FFC000'],
+        ['Purple', '#7030A0'],
+      ],
+      onPick: (hex) => {
+        restoreRichRange(savedRange);
+        onApplyTextColor?.(hex);
+      },
+    });
+    addColorSwatchSubmenu(fmtRow, {
+      kind: 'highlight',
+      icon: 'highlighter',
+      title: 'Text Highlight',
+      swatches: [
+        ['None', ''],
+        ['Yellow', '#FEF08A'],
+        ['Green', '#BBF7D0'],
+        ['Cyan', '#A5F3FC'],
+        ['Pink', '#FBCFE8'],
+        ['Lavender', '#DDD6FE'],
+      ],
+      onPick: (hex) => {
+        restoreRichRange(savedRange);
+        onApplyHighlightColor?.(hex);
+      },
+    });
+    addIconButton(fmtRow, {
       icon: 'remove-formatting',
       title: 'Clear Formatting',
       onSelect: () => {
@@ -383,6 +435,69 @@ export function createContextMenu({
         addSpellingSubmenu(editRow, wordInfo);
       }
     }
+  }
+
+  function addColorSwatchSubmenu(row, { kind = 'text', icon = '', label = '', title, swatches, onPick }) {
+    const wrap = document.createElement('div');
+    wrap.className = 'context-menu-spelling-wrap';
+
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'context-menu-icon-btn';
+    btn.title = title;
+    btn.setAttribute('aria-label', title);
+    btn.setAttribute('aria-haspopup', 'menu');
+    btn.setAttribute('aria-expanded', 'false');
+
+    const inner = document.createElement('span');
+    inner.className = 'color-picker-btn';
+    if (icon) {
+      inner.appendChild(createIconPlaceholder(icon, 'lucide-xs'));
+    } else {
+      const letter = document.createElement('span');
+      letter.className = 'color-letter';
+      letter.textContent = label;
+      inner.appendChild(letter);
+    }
+    const bar = document.createElement('span');
+    bar.className = kind === 'highlight' ? 'highlight-indicator' : 'color-indicator';
+    inner.appendChild(bar);
+    btn.appendChild(inner);
+
+    const popover = document.createElement('div');
+    popover.className = 'context-menu-color-popover';
+    popover.setAttribute('role', 'menu');
+
+    swatches.forEach(([name, hex]) => {
+      const sw = document.createElement('button');
+      sw.type = 'button';
+      sw.className = hex ? 'context-menu-swatch' : 'context-menu-swatch is-none';
+      sw.title = name;
+      sw.setAttribute('aria-label', name);
+      if (hex) sw.style.backgroundColor = hex;
+      sw.addEventListener('mousedown', (e) => e.preventDefault());
+      sw.addEventListener('click', (e) => {
+        e.stopPropagation();
+        onPick?.(hex);
+        close();
+      });
+      popover.appendChild(sw);
+    });
+
+    btn.addEventListener('mousedown', (e) => e.preventDefault());
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const willOpen = !popover.classList.contains('is-open');
+      menuEl
+        .querySelectorAll('.context-menu-spelling-popover.is-open, .context-menu-color-popover.is-open')
+        .forEach((p) => p.classList.remove('is-open'));
+      popover.classList.toggle('is-open', willOpen);
+      btn.setAttribute('aria-expanded', String(willOpen));
+    });
+
+    wrap.appendChild(btn);
+    wrap.appendChild(popover);
+    row.appendChild(wrap);
   }
 
   function addGrammarSubmenu(row, grammarMatch) {
@@ -559,8 +674,13 @@ export function createContextMenu({
         addBtn.setAttribute('role', 'menuitem');
         addBtn.textContent = `Add "${wordInfo.word}"`;
         addBtn.addEventListener('mousedown', (e) => e.preventDefault());
-        addBtn.addEventListener('click', () => {
-          invoke('add_word_to_dictionary', { word: wordInfo.word }).catch(() => {});
+        addBtn.addEventListener('click', async () => {
+          try {
+            await invoke('add_word_to_dictionary', { word: wordInfo.word });
+            onRefreshGrammar?.();
+          } catch {
+            // Ignore dictionary save errors
+          }
           close();
         });
         popover.appendChild(addBtn);

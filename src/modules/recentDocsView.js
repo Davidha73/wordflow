@@ -36,10 +36,42 @@ function formatMode(doc) {
   return ext.toUpperCase();
 }
 
+const STARTER_TEMPLATES = [
+  {
+    id: 'blank',
+    title: 'Blank Document',
+    desc: 'Start with a clean page',
+    icon: 'file-plus',
+    html: '',
+  },
+  {
+    id: 'letter',
+    title: 'Letter',
+    desc: 'Formal or personal letter',
+    icon: 'mail',
+    html: '<p><strong>Your Name</strong><br>123 Street Address<br>City, Postcode</p><p>Date</p><p><strong>Recipient Name</strong><br>Company or Organisation<br>Address</p><p>Dear [Name],</p><p>Write the body of your letter here.</p><p>Sincerely,</p><p>Your Name</p>',
+  },
+  {
+    id: 'report',
+    title: 'Report',
+    desc: 'Title, summary & sections',
+    icon: 'file-text',
+    html: '<h1>Report Title</h1><p><em>Prepared by [Your Name] • Date</em></p><h2>Executive Summary</h2><p>Summarise the key findings and purpose of this report.</p><h2>Key Details</h2><p>Add your main points, data, or analysis here.</p><h2>Next Steps</h2><ul><li>Action item 1</li><li>Action item 2</li></ul>',
+  },
+  {
+    id: 'meeting',
+    title: 'Meeting Notes',
+    desc: 'Agenda, attendees & actions',
+    icon: 'clipboard-list',
+    html: '<h1>Meeting Notes</h1><p><strong>Date:</strong> [Date] &nbsp;|&nbsp; <strong>Attendees:</strong> [Names]</p><h2>Agenda</h2><ul><li>Topic 1</li><li>Topic 2</li></ul><h2>Discussion &amp; Decisions</h2><p>Capture key notes and decisions here.</p><h2>Action Items</h2><ul><li>[Owner] — Task description</li></ul>',
+  },
+];
+
 export function createRecentDocsView({
   containerEl,
   onOpenFile,
   onNewDocument,
+  onNewTemplate,
   onOpenDialog,
   onClearRecent,
   onRemoveRecent,
@@ -213,6 +245,59 @@ export function createRecentDocsView({
 
       card.appendChild(list);
     }
+
+    const templatesSection = document.createElement('div');
+    templatesSection.className = 'recent-templates-section';
+
+    const templatesHeading = document.createElement('div');
+    templatesHeading.className = 'recent-templates-heading';
+    templatesHeading.textContent = 'Start from a Template';
+    templatesSection.appendChild(templatesHeading);
+
+    const templatesGrid = document.createElement('div');
+    templatesGrid.className = 'recent-templates-grid';
+    STARTER_TEMPLATES.forEach((tpl) => {
+      const tplBtn = document.createElement('button');
+      tplBtn.type = 'button';
+      tplBtn.className = 'recent-template-card';
+
+      const thumb = document.createElement('div');
+      thumb.className = 'recent-template-thumb';
+      thumb.setAttribute('aria-hidden', 'true');
+      if (tpl.html) {
+        const previewDoc = document.createElement('div');
+        previewDoc.className = 'recent-template-preview-doc';
+        previewDoc.innerHTML = tpl.html;
+        thumb.appendChild(previewDoc);
+      } else {
+        thumb.classList.add('is-blank');
+        thumb.appendChild(createIconPlaceholder(tpl.icon, 'lucide-md'));
+      }
+      tplBtn.appendChild(thumb);
+
+      const textWrap = document.createElement('span');
+      textWrap.className = 'recent-template-text';
+      const titleEl = document.createElement('span');
+      titleEl.className = 'recent-template-title';
+      titleEl.textContent = tpl.title;
+      const descEl = document.createElement('span');
+      descEl.className = 'recent-template-desc';
+      descEl.textContent = tpl.desc;
+      textWrap.appendChild(titleEl);
+      textWrap.appendChild(descEl);
+
+      tplBtn.appendChild(textWrap);
+      tplBtn.addEventListener('click', () => {
+        if (!tpl.html) {
+          onNewDocument?.();
+        } else {
+          onNewTemplate?.(tpl);
+        }
+      });
+      templatesGrid.appendChild(tplBtn);
+    });
+    templatesSection.appendChild(templatesGrid);
+    card.appendChild(templatesSection);
 
     const actions = document.createElement('div');
     actions.className = 'recent-docs-actions';

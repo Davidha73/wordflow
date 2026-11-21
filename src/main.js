@@ -216,6 +216,7 @@ async function initApp() {
     containerEl: document.getElementById('recent-docs-view'),
     onOpenFile: (path) => fileService?.openFileByPath(path),
     onNewDocument: () => fileService?.newDocument(),
+    onNewTemplate: (tpl) => fileService?.newFromTemplate(tpl),
     onOpenDialog: () => fileService?.openDocument(),
     onClearRecent: async () => {
       await clearRecentDocuments();
@@ -299,8 +300,13 @@ async function initApp() {
     convertPopoverEl.addEventListener('click', (event) => {
       const item = event.target.closest('[data-convert-format]');
       if (!item) return;
+      const targetFormat = item.dataset.convertFormat;
       closeConvertMenu();
-      fileService.exportDocument(item.dataset.convertFormat);
+      if (targetFormat === 'pdf') {
+        fileService.printDocument();
+      } else {
+        fileService.exportDocument(targetFormat);
+      }
     });
 
     document.addEventListener('mousedown', (event) => {
@@ -394,6 +400,9 @@ async function initApp() {
     } else if (key === 'p') {
       event.preventDefault();
       fileService.printDocument();
+    } else if (key === 'f' && event.shiftKey) {
+      event.preventDefault();
+      toggleFocusMode();
     } else if (key === 'f') {
       event.preventDefault();
       editor.openFindReplace(false);
@@ -407,6 +416,20 @@ async function initApp() {
       event.preventDefault();
       editor.toggleMode();
     } else if (editor.getMode() === 'docx') {
+      if (event.altKey) {
+        const BLOCK_SHORTCUTS = {
+          Digit0: 'P',
+          Digit1: 'H1',
+          Digit2: 'H2',
+          Digit3: 'H3',
+        };
+        const blockTag = BLOCK_SHORTCUTS[event.code];
+        if (blockTag) {
+          event.preventDefault();
+          editor.execBlockCommand(blockTag);
+          return;
+        }
+      }
       if (key === 'b') {
         event.preventDefault();
         editor.execFormatCommand('bold');
@@ -425,6 +448,42 @@ async function initApp() {
       }
     }
   });
+
+  const focusModeBtnEl = document.getElementById('btn-focus-mode');
+  let focusMode = false;
+
+  function toggleFocusMode(forceState) {
+    focusMode = typeof forceState === 'boolean' ? forceState : !focusMode;
+    appShellEl?.setAttribute('data-focus-mode', String(focusMode));
+    if (focusModeBtnEl) {
+      focusModeBtnEl.classList.toggle('is-active', focusMode);
+      focusModeBtnEl.setAttribute('aria-pressed', String(focusMode));
+    }
+  }
+
+  focusModeBtnEl?.addEventListener('click', () => toggleFocusMode());
+
+  document.addEventListener('keydown', (event) => {
+    if (event.key === 'Escape' && focusMode) {
+      toggleFocusMode(false);
+    }
+  });
+
+  const draftBannerEl = document.getElementById('draft-recovery-banner');
+  const restoreDraftBtnEl = document.getElementById('btn-restore-draft');
+  const dismissDraftBtnEl = document.getElementById('btn-dismiss-draft');
+  const existingDraft = fileService.getRecoveryDraft();
+  if (existingDraft && draftBannerEl) {
+    draftBannerEl.classList.remove('is-hidden');
+    restoreDraftBtnEl?.addEventListener('click', async () => {
+      await fileService.restoreRecoveryDraft();
+      draftBannerEl.classList.add('is-hidden');
+    });
+    dismissDraftBtnEl?.addEventListener('click', () => {
+      fileService.clearRecoveryDraft();
+      draftBannerEl.classList.add('is-hidden');
+    });
+  }
 
   statusBar.updateMode(editor.getMode());
   statusBar.updateStats(editor.getStats());

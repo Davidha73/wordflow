@@ -179,12 +179,40 @@ export function initDockableToolbars({ appShellEl }) {
     removeDropIndicator();
   };
 
+  const syncTopDividers = () => {
+    const topDock = docks.top;
+    if (!topDock) return;
+    const children = Array.from(topDock.children);
+    const isVisibleGroup = (el) =>
+      el?.classList.contains('toolbar-group') && getComputedStyle(el).display !== 'none';
+
+    let seenGroup = false;
+    let lastVisibleDivider = null;
+    for (const child of children) {
+      if (isVisibleGroup(child)) {
+        seenGroup = true;
+        lastVisibleDivider = null;
+      } else if (child.classList.contains('toolbar-divider')) {
+        if (!seenGroup || lastVisibleDivider) {
+          child.classList.add('is-orphaned-divider');
+        } else {
+          child.classList.remove('is-orphaned-divider');
+          lastVisibleDivider = child;
+        }
+      }
+    }
+    if (lastVisibleDivider) {
+      lastVisibleDivider.classList.add('is-orphaned-divider');
+    }
+  };
+
   for (const tb of toolbars) {
     tb.addEventListener('dblclick', (e) => {
       if (e.target.closest(INTERACTIVE_SELECTOR)) return;
       e.preventDefault();
       e.stopPropagation();
       dockToolbar(tb, 'top');
+      syncTopDividers();
       saveLayout();
     });
 
@@ -241,6 +269,7 @@ export function initDockableToolbars({ appShellEl }) {
           if (hoveredDock) {
             dockToolbar(tb, hoveredDock, insertBeforeNode);
           }
+          syncTopDividers();
           saveLayout();
         }
       };
@@ -251,8 +280,10 @@ export function initDockableToolbars({ appShellEl }) {
   }
 
   loadLayout();
+  syncTopDividers();
 
   return {
+    syncDividers: syncTopDividers,
     resetLayout: () => {
       try {
         localStorage.removeItem(STORAGE_KEY);

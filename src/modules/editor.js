@@ -49,6 +49,15 @@ const TEXT_COLOR_SWATCHES = [
   { name: 'Purple', hex: '#7030A0' },
 ];
 
+const HIGHLIGHT_SWATCHES = [
+  { name: 'Yellow', hex: '#FEF08A' },
+  { name: 'Green', hex: '#BBF7D0' },
+  { name: 'Cyan', hex: '#A5F3FC' },
+  { name: 'Pink', hex: '#FBCFE8' },
+  { name: 'Orange', hex: '#FED7AA' },
+  { name: 'Lavender', hex: '#DDD6FE' },
+];
+
 const MODE_ORDER = ['docx', 'md', 'html', 'txt'];
 const JUSTIFY_MAP = {
   justifyLeft: 'left',
@@ -135,11 +144,17 @@ export function createEditor({ onChange, onModeChange, onFontsLoaded }) {
   const stylesPopoverEl = document.getElementById('styles-popover');
   const stylesCustomListEl = document.getElementById('styles-custom-list');
   const openStyleEditorBtnEl = document.getElementById('btn-open-style-editor');
+  const formatPainterBtnEl = document.getElementById('btn-format-painter');
   const textColorInputEl = document.getElementById('text-color-input');
   const textColorWrapEl = document.getElementById('text-color-wrap');
   const textColorBtnEl = document.getElementById('btn-text-color');
   const textColorPopoverEl = document.getElementById('text-color-popover');
   const textColorAutoBtnEl = document.getElementById('btn-color-auto');
+  const highlightColorWrapEl = document.getElementById('highlight-color-wrap');
+  const highlightColorBtnEl = document.getElementById('btn-highlight-color');
+  const highlightColorPopoverEl = document.getElementById('highlight-color-popover');
+  const highlightNoneBtnEl = document.getElementById('btn-highlight-none');
+  const highlightSwatchesGridEl = document.getElementById('highlight-swatches-grid');
   const columnsMenuWrapEl = document.getElementById('columns-menu-wrap');
   const columnsMenuBtnEl = document.getElementById('btn-columns-menu');
   const columnsMenuPopoverEl = document.getElementById('columns-menu-popover');
@@ -264,9 +279,12 @@ export function createEditor({ onChange, onModeChange, onFontsLoaded }) {
     sourceEl,
     getMode: () => mode,
     execFormatCommand,
+    execBlockCommand,
     linkTools,
     onApplyFontFamily: applyFontFamily,
     onApplyFontSize: applyFontSize,
+    onApplyTextColor: applyTextColor,
+    onApplyHighlightColor: applyHighlightColor,
     onFindReplace: () => findReplace.open(false),
     onRichMutate: () => recordRichMutation(),
     onSourceMutate: () => handleSourceInput(),
@@ -339,12 +357,83 @@ export function createEditor({ onChange, onModeChange, onFontsLoaded }) {
     }
   }
 
+  let copiedFormat = null;
+
+  function setFormatPainterActive(active) {
+    if (!active) copiedFormat = null;
+    formatPainterBtnEl?.classList.toggle('is-active', active);
+    formatPainterBtnEl?.setAttribute('aria-pressed', String(active));
+    wordEl?.classList.toggle('is-format-painter', active);
+    inspectorPane?.refresh?.();
+  }
+
+  function captureFormatAtSelection() {
+    const { root } = getFormattingTarget();
+    const sel = window.getSelection();
+    const anchor = sel?.anchorNode;
+    const el = anchor?.nodeType === Node.ELEMENT_NODE ? anchor : anchor?.parentElement;
+    if (!el || !root.contains(el)) return null;
+
+    const computed = window.getComputedStyle(el);
+    const fontFamily = fontSelectEl?.value || extractPrimaryFontName(computed.fontFamily) || defaultFont;
+    const fontSize = fontSizeSelectEl?.value || defaultFontSize;
+    const color = computed.color || '#1a1a1a';
+    const cmdState = (cmd) => {
+      try {
+        return document.queryCommandState(cmd);
+      } catch {
+        return false;
+      }
+    };
+    return {
+      fontFamily,
+      fontSize,
+      color,
+      bold: cmdState('bold'),
+      italic: cmdState('italic'),
+      underline: cmdState('underline'),
+      strikeThrough: cmdState('strikeThrough'),
+    };
+  }
+
+  function applyCopiedFormatToSelection() {
+    if (!copiedFormat || mode !== 'docx') return;
+    const fmt = copiedFormat;
+    setFormatPainterActive(false);
+
+    if (fmt.fontFamily) applyFontFamily(fmt.fontFamily);
+    if (fmt.fontSize) applyFontSize(fmt.fontSize);
+    if (fmt.color) applyTextColor(fmt.color);
+
+    ['bold', 'italic', 'underline', 'strikeThrough'].forEach((cmd) => {
+      try {
+        if (document.queryCommandState(cmd) !== Boolean(fmt[cmd])) {
+          document.execCommand(cmd, false, null);
+        }
+      } catch {
+        // Ignore unsupported state queries
+      }
+    });
+
+    recordRichMutation();
+    updateActiveToolbarStates();
+  }
+
   function closeColorPopover() {
     if (textColorPopoverEl) {
       textColorPopoverEl.classList.remove('is-open');
     }
     if (textColorBtnEl) {
       textColorBtnEl.setAttribute('aria-expanded', 'false');
+    }
+  }
+
+  function closeHighlightPopover() {
+    if (highlightColorPopoverEl) {
+      highlightColorPopoverEl.classList.remove('is-open');
+    }
+    if (highlightColorBtnEl) {
+      highlightColorBtnEl.setAttribute('aria-expanded', 'false');
     }
   }
 
@@ -474,7 +563,9 @@ export function createEditor({ onChange, onModeChange, onFontsLoaded }) {
       control.disabled = !isRichMode;
     });
     if (!isRichMode) {
+      setFormatPainterActive(false);
       closeColorPopover();
+      closeHighlightPopover();
       closeStylesPopover();
       if (tablePopoverEl) tablePopoverEl.classList.remove('is-open');
       if (shapesPopoverEl) shapesPopoverEl.classList.remove('is-open');
@@ -553,6 +644,8 @@ export function createEditor({ onChange, onModeChange, onFontsLoaded }) {
       'italic',
       'underline',
       'strikeThrough',
+      'superscript',
+      'subscript',
       'insertUnorderedList',
       'insertOrderedList',
     ];
@@ -890,6 +983,36 @@ export function createEditor({ onChange, onModeChange, onFontsLoaded }) {
         }
       }
     });
+  }
+
+  function applyHighlightColor(hex) {
+    if (mode !== 'docx') return;
+    if (highlightColorWrapEl) {
+      highlightColorWrapEl.style.setProperty('--active-highlight-color', hex || 'transparent');
+    }
+    const { root, isShapeLabel } = getFormattingTarget();
+    if (!isShapeLabel && document.activeElement !== root) {
+      root.focus({ preventScroll: true });
+    }
+    const value = hex || 'transparent';
+    let applied = false;
+    try {
+      applied = document.execCommand('hiliteColor', false, value);
+    } catch {
+      applied = false;
+    }
+    if (!applied) {
+      try {
+        document.execCommand('backColor', false, value);
+      } catch {
+        // Ignore unsupported highlight command
+      }
+    }
+    if (isShapeLabel) {
+      pageShapes.syncActiveLabel();
+      return;
+    }
+    recordRichMutation();
   }
 
   function applyTextColor(hex) {
@@ -1609,6 +1732,30 @@ export function createEditor({ onChange, onModeChange, onFontsLoaded }) {
       }
     });
 
+    if (formatPainterBtnEl) {
+      formatPainterBtnEl.addEventListener('click', () => {
+        if (mode !== 'docx') return;
+        if (copiedFormat) {
+          setFormatPainterActive(false);
+          return;
+        }
+        const captured = captureFormatAtSelection();
+        if (captured) {
+          copiedFormat = captured;
+          setFormatPainterActive(true);
+        }
+      });
+    }
+
+    wordEl?.addEventListener('mouseup', () => {
+      if (copiedFormat && mode === 'docx') {
+        const sel = window.getSelection();
+        if (sel && !sel.isCollapsed) {
+          applyCopiedFormatToSelection();
+        }
+      }
+    });
+
     if (fontSelectEl) {
       fontSelectEl.addEventListener('change', () => {
         applyFontFamily(fontSelectEl.value);
@@ -1688,6 +1835,40 @@ export function createEditor({ onChange, onModeChange, onFontsLoaded }) {
       });
     }
 
+    if (highlightNoneBtnEl) {
+      highlightNoneBtnEl.addEventListener('mousedown', (event) => event.preventDefault());
+      highlightNoneBtnEl.addEventListener('click', () => {
+        applyHighlightColor('');
+        closeHighlightPopover();
+      });
+    }
+
+    if (highlightSwatchesGridEl) {
+      HIGHLIGHT_SWATCHES.forEach(({ name, hex }) => {
+        const swatch = document.createElement('button');
+        swatch.type = 'button';
+        swatch.className = 'color-swatch';
+        swatch.title = name;
+        swatch.setAttribute('aria-label', name);
+        swatch.style.backgroundColor = hex;
+        swatch.addEventListener('mousedown', (event) => event.preventDefault());
+        swatch.addEventListener('click', () => {
+          applyHighlightColor(hex);
+          closeHighlightPopover();
+        });
+        highlightSwatchesGridEl.appendChild(swatch);
+      });
+    }
+
+    if (highlightColorBtnEl && highlightColorPopoverEl) {
+      highlightColorBtnEl.addEventListener('click', () => {
+        if (highlightColorBtnEl.disabled) return;
+        const willOpen = !highlightColorPopoverEl.classList.contains('is-open');
+        highlightColorPopoverEl.classList.toggle('is-open', willOpen);
+        highlightColorBtnEl.setAttribute('aria-expanded', String(willOpen));
+      });
+    }
+
     if (textColorInputEl) {
       textColorInputEl.addEventListener('input', () => {
         applyTextColor(textColorInputEl.value);
@@ -1703,6 +1884,9 @@ export function createEditor({ onChange, onModeChange, onFontsLoaded }) {
       }
       if (textColorWrapEl && !textColorWrapEl.contains(event.target)) {
         closeColorPopover();
+      }
+      if (highlightColorWrapEl && !highlightColorWrapEl.contains(event.target)) {
+        closeHighlightPopover();
       }
       if (tableInsertWrapEl && !tableInsertWrapEl.contains(event.target)) {
         if (tablePopoverEl) tablePopoverEl.classList.remove('is-open');
@@ -2182,6 +2366,7 @@ export function createEditor({ onChange, onModeChange, onFontsLoaded }) {
     getStats,
     execFormatCommand,
     execBlockCommand,
+    execBlockCommand,
     toggleBottomBorder,
     columnTools,
     openLinkDialog: () => linkTools.open(),
@@ -2189,6 +2374,8 @@ export function createEditor({ onChange, onModeChange, onFontsLoaded }) {
     getCustomStyles: () => styleEditorModal?.getCustomStyles() || [],
     applyCustomStyle,
     openStyleEditor: () => styleEditorModal?.open(),
+    applyTextColor,
+    applyHighlightColor,
   });
   styleEditorModal = createStyleEditorModal({
     getAvailableFonts: () => availableFonts,
@@ -2216,6 +2403,7 @@ export function createEditor({ onChange, onModeChange, onFontsLoaded }) {
     setMode,
     toggleMode,
     execFormatCommand,
+    execBlockCommand,
     getDefaultFont: () => defaultFont,
     getDefaultFontSize: () => defaultFontSize,
     getDefaultMode: () => defaultMode,

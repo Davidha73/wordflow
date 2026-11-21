@@ -1,13 +1,14 @@
 ## [2026-11-21 / v0.1.0]
 - **Status:**
-  - Added **Default Zoom** (50%–200%) to Settings (`settingsStore.js`, `settingsDrawer.js`, `statusBar.js`, `main.js`).
-  - Added Word-style preview dropdowns (`Paragraph` default, active font via `--active-style-font`) + **Style Editor** modal (`styleEditorModal.js`, `index.html`, `editor.js`, `inspectorPane.js`) with saved custom styles, live preview, clean `<p>` on Return after headings/custom styles, and no `H1` underline.
-  - Added Markdown line style detection (`Heading 1`/`2`/`3`/`Paragraph`) in the Inspector's Selection Info and Selection Settings (`inspectorPane.js`).
-  - Fixed free toolbar dragging (`dockableToolbars.js`) and unified modal/button styles (`editor.css`).
-  - Added macOS native `NSSpellChecker` (`spellcheck.rs`, `Cargo.toml`) and `.grammar-underline-layer` (`grammarHighlights.js`, hidden outside `.docx` mode).
+  - Added **Default Zoom** to Settings, Word-style preview dropdowns + **Style Editor** modal (`styleEditorModal.js`), Markdown line style detection (`inspectorPane.js`), free toolbar dragging (`dockableToolbars.js`), and unified button/close styles (`editor.css`).
+  - Added macOS `NSSpellChecker`, `.grammar-underline-layer` (`grammarHighlights.js`, hidden outside `.docx`), and synced **Add to Dictionary** (`custom_dictionary.txt` in `spellcheck.rs` + `grammar.rs` + `contextMenu.js`) so red underlines clear immediately.
+  - Added **Export as .pdf** in Convert menu (`index.html`, `main.js`) and **Start from a Template** cards (`Blank Document`, `Letter`, `Report`, `Meeting Notes`) with miniature page previews (`recentDocsView.js`, `fileService.js`, `editor.css`).
+  - Configured Git remote `git@github.com:Davidha73/wordflow.git` and added `/push` workspace skill (`.agents/skills/push/SKILL.md`).
 - **Files Changed:**
   - `src/index.html`, `src/main.js`, `src/styles/editor.css`
   - `src/modules/settingsStore.js`, `src/modules/settingsDrawer.js`, `src/modules/statusBar.js`, `src/modules/styleEditorModal.js`
   - `src/modules/editor.js`, `src/modules/inspectorPane.js`, `src/modules/dockableToolbars.js`, `src/modules/grammarHighlights.js`
-  - `src-tauri/Cargo.toml`, `src-tauri/src/spellcheck.rs`
-- **Next Objectives:** Ready for daily use or further polish/testing as needed.
+  - `src/modules/contextMenu.js`, `src/modules/fileService.js`, `src/modules/recentDocsView.js`
+  - `src-tauri/Cargo.toml`, `src-tauri/src/spellcheck.rs`, `src-tauri/src/grammar.rs`
+  - `.gitignore`, `.agents/skills/push/SKILL.md`
+- **Next Objectives:** Run `/push` when ready to push the latest changes, or continue with Open With / Toolbar polish / Release build.

@@ -92,6 +92,9 @@
                     <button type="button" class="convert-menu-item" role="menuitem" data-convert-format="txt">
                       Export as .txt (Plain Text)
                     </button>
+                    <button type="button" class="convert-menu-item" role="menuitem" data-convert-format="pdf">
+                      Export as .pdf (PDF)
+                    </button>
                   </div>
                 </div>
                 <button type="button" class="doc-pill-item" role="menuitem" id="btn-print" title="Print / Export PDF (Ctrl+P)">
@@ -186,6 +189,9 @@
             <button type="button" class="fmt-btn" id="btn-find-replace" title="Find &amp; Replace (Ctrl+F)" aria-label="Find and Replace">
               <i data-lucide="search" class="lucide-sm"></i>
             </button>
+            <button type="button" class="fmt-btn" id="btn-format-painter" title="Format Painter (Copy &amp; Apply Formatting)" aria-label="Format Painter" aria-pressed="false">
+              <i data-lucide="paintbrush" class="lucide-sm"></i>
+            </button>
           </div>
 
           <span class="toolbar-divider" aria-hidden="true"></span>
@@ -278,6 +284,12 @@
             <button type="button" class="fmt-btn fmt-strike" data-cmd="strikeThrough" title="Strikethrough" aria-label="Strikethrough">
               <i data-lucide="strikethrough" class="lucide-sm"></i>
             </button>
+            <button type="button" class="fmt-btn" data-cmd="superscript" title="Superscript" aria-label="Superscript">
+              <i data-lucide="superscript" class="lucide-sm"></i>
+            </button>
+            <button type="button" class="fmt-btn" data-cmd="subscript" title="Subscript" aria-label="Subscript">
+              <i data-lucide="subscript" class="lucide-sm"></i>
+            </button>
             <div class="color-picker-wrap" id="text-color-wrap">
               <button
                 type="button"
@@ -309,6 +321,29 @@
                     aria-label="Custom Text Colour"
                   />
                 </label>
+              </div>
+            </div>
+            <div class="color-picker-wrap" id="highlight-color-wrap">
+              <button
+                type="button"
+                class="fmt-btn color-toggle-btn"
+                id="btn-highlight-color"
+                title="Text Highlight"
+                aria-haspopup="true"
+                aria-expanded="false"
+              >
+                <span class="color-picker-btn">
+                  <i data-lucide="highlighter" class="lucide-xs"></i>
+                  <span class="highlight-indicator" id="highlight-indicator"></span>
+                </span>
+              </button>
+              <div class="color-popover" id="highlight-color-popover" role="dialog" aria-label="Text highlight colour">
+                <button type="button" class="color-auto-row" id="btn-highlight-none">
+                  <span class="color-auto-box"></span>
+                  <span>No Highlight</span>
+                </button>
+                <div class="color-section-label">Highlight Colors</div>
+                <div class="color-swatches-grid" id="highlight-swatches-grid"></div>
               </div>
             </div>
           </div>
@@ -374,6 +409,12 @@
             </button>
             <button type="button" class="fmt-btn" data-cmd="insertOrderedList" title="Numbered List" aria-label="Numbered List">
               <i data-lucide="list-ordered" class="lucide-sm"></i>
+            </button>
+            <button type="button" class="fmt-btn" data-cmd="indent" title="Increase Indent" aria-label="Increase Indent">
+              <i data-lucide="indent-increase" class="lucide-sm"></i>
+            </button>
+            <button type="button" class="fmt-btn" data-cmd="outdent" title="Decrease Indent" aria-label="Decrease Indent">
+              <i data-lucide="indent-decrease" class="lucide-sm"></i>
             </button>
             <button type="button" class="fmt-btn" data-block="BLOCKQUOTE" title="Blockquote" aria-label="Blockquote">
               <i data-lucide="quote" class="lucide-sm"></i>
@@ -821,6 +862,14 @@
         <button type="button" class="mini-btn is-active" id="btn-close-hf">Close Header &amp; Footer</button>
       </div>
 
+      <div class="draft-recovery-banner is-hidden" id="draft-recovery-banner" role="status">
+        <span id="draft-recovery-text">An unsaved recovery draft was found from your last session.</span>
+        <div class="draft-recovery-actions">
+          <button type="button" class="settings-footer-btn is-primary" id="btn-restore-draft">Restore Draft</button>
+          <button type="button" class="settings-footer-btn" id="btn-dismiss-draft">Dismiss</button>
+        </div>
+      </div>
+
       <div class="workspace-row">
         <aside class="dock-zone dock-side dock-left" id="dock-left" data-dock="left" aria-label="Left toolbar dock"></aside>
         <main class="workspace" id="workspace" data-mode="docx">
@@ -1231,6 +1280,16 @@
         <div class="status-right">
           <span class="status-item" id="status-words">0 words</span>
           <span class="status-item" id="status-chars">0 chars</span>
+          <button
+            type="button"
+            class="zoom-btn focus-mode-btn"
+            id="btn-focus-mode"
+            title="Focus Mode (Ctrl+Shift+F)"
+            aria-label="Toggle Focus Mode"
+            aria-pressed="false"
+          >
+            <i data-lucide="scan-eye" class="lucide-xs"></i>
+          </button>
           <div class="zoom-controls" aria-label="Document zoom">
             <button type="button" class="zoom-btn" id="btn-zoom-out" title="Zoom Out" aria-label="Zoom Out">
               <i data-lucide="minus" class="lucide-xs"></i>

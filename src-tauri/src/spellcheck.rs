@@ -1,3 +1,84 @@
+use std::collections::HashSet;
+use std::fs;
+use std::path::PathBuf;
+use std::sync::{OnceLock, RwLock};
+use tauri::Manager;
+
+static LEARNED_WORDS: OnceLock<RwLock<Option<HashSet<String>>>> = OnceLock::new();
+
+fn dictionary_path(app: &tauri::AppHandle) -> Option<PathBuf> {
+    app.path()
+        .app_config_dir()
+        .ok()
+        .map(|dir| dir.join("custom_dictionary.txt"))
+}
+
+fn ensure_loaded(app: &tauri::AppHandle) -> &'static RwLock<Option<HashSet<String>>> {
+    let lock = LEARNED_WORDS.get_or_init(|| RwLock::new(None));
+    let needs_load = lock.read().map(|guard| guard.is_none()).unwrap_or(false);
+    if needs_load {
+        let mut set = HashSet::new();
+        if let Some(path) = dictionary_path(app) {
+            if let Ok(contents) = fs::read_to_string(path) {
+                for line in contents.lines() {
+                    let w = line.trim().to_lowercase();
+                    if !w.is_empty() {
+                        set.insert(w);
+                    }
+                }
+            }
+        }
+        if let Ok(mut guard) = lock.write() {
+            if guard.is_none() {
+                *guard = Some(set);
+            }
+        }
+    }
+    lock
+}
+
+fn record_learned_word(app: &tauri::AppHandle, word: &str) {
+    let normalized = word.trim().to_lowercase();
+    if normalized.is_empty() {
+        return;
+    }
+    let lock = ensure_loaded(app);
+    if let Ok(mut guard) = lock.write() {
+        let set = guard.get_or_insert_with(HashSet::new);
+        if set.insert(normalized) {
+            if let Some(path) = dictionary_path(app) {
+                if let Some(parent) = path.parent() {
+                    let _ = fs::create_dir_all(parent);
+                }
+                let mut words: Vec<&String> = set.iter().collect();
+                words.sort();
+                let body: String = words.into_iter().cloned().collect::<Vec<_>>().join("\n");
+                let _ = fs::write(path, body);
+            }
+        }
+    }
+}
+
+pub fn is_word_learned(app: &tauri::AppHandle, word: &str) -> bool {
+    let normalized = word.trim().to_lowercase();
+    if normalized.is_empty() {
+        return false;
+    }
+    let lock = ensure_loaded(app);
+    if let Ok(guard) = lock.read() {
+        if guard.as_ref().is_some_and(|set| set.contains(&normalized)) {
+            return true;
+        }
+    }
+    #[cfg(target_os = "macos")]
+    {
+        if mac_spell::has_learned_word(word) {
+            return true;
+        }
+    }
+    false
+}
+
 #[cfg(target_os = "windows")]
 mod win_spell {
     use windows::core::{HSTRING, PWSTR};
@@ -143,6 +224,18 @@ mod mac_spell {
         }
         Ok(())
     }
+
+    pub fn has_learned_word(word: &str) -> bool {
+        let trimmed = word.trim();
+        if trimmed.is_empty() {
+            return false;
+        }
+        let Some(checker) = shared_checker() else {
+            return false;
+        };
+        let ns_word = NSString::from_str(trimmed);
+        unsafe { msg_send![&*checker, hasLearnedWord: &*ns_word] }
+    }
 }
 
 #[tauri::command]
@@ -163,7 +256,8 @@ pub fn check_word_spelling(word: String) -> Vec<String> {
 }
 
 #[tauri::command]
-pub fn add_word_to_dictionary(word: String) -> Result<(), String> {
+pub fn add_word_to_dictionary(app: tauri::AppHandle, word: String) -> Result<(), String> {
+    record_learned_word(&app, &word);
     #[cfg(target_os = "windows")]
     {
         win_spell::add_word(&word)

@@ -615,6 +615,116 @@ body {
   border-top: 1px solid var(--chrome-border);
 }
 
+.recent-templates-section {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+  margin-bottom: 0.9rem;
+}
+
+.recent-templates-heading {
+  font-size: 0.74rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--chrome-muted);
+}
+
+.recent-templates-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.55rem;
+}
+
+@media (max-width: 640px) {
+  .recent-templates-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+.recent-template-card {
+  appearance: none;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0.45rem;
+  padding: 0.45rem;
+  border: 1px solid var(--chrome-border);
+  border-radius: 8px;
+  background-color: var(--chrome-surface);
+  color: var(--chrome-text);
+  text-align: left;
+  cursor: pointer;
+}
+
+.recent-template-card:hover {
+  background-color: var(--chrome-hover);
+  border-color: var(--accent);
+}
+
+.recent-template-thumb {
+  position: relative;
+  height: 112px;
+  border: 1px solid var(--chrome-border);
+  border-radius: 5px;
+  background-color: var(--paper-bg);
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.recent-template-thumb.is-blank {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--chrome-muted);
+}
+
+.recent-template-preview-doc {
+  width: 340px;
+  padding: 18px 20px;
+  transform: scale(0.36);
+  transform-origin: top left;
+  color: var(--paper-text);
+  font-family: var(--doc-font, Georgia, serif);
+  font-size: 11px;
+  line-height: 1.35;
+}
+
+.recent-template-preview-doc h1 {
+  font-size: 18px;
+  margin: 0 0 6px;
+}
+
+.recent-template-preview-doc h2 {
+  font-size: 13px;
+  margin: 8px 0 4px;
+}
+
+.recent-template-preview-doc p {
+  margin: 0 0 6px;
+}
+
+.recent-template-preview-doc ul {
+  margin: 0 0 6px;
+  padding-left: 16px;
+}
+
+.recent-template-text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.recent-template-title {
+  font-size: 0.82rem;
+  font-weight: 600;
+}
+
+.recent-template-desc {
+  font-size: 0.72rem;
+  color: var(--chrome-muted);
+}
+
 .recent-docs-action-btn {
   appearance: none;
   border: 1px solid var(--chrome-border);
@@ -876,8 +986,13 @@ body.is-dragging-toolbar * {
   line-height: 1;
 }
 
-.toolbar-divider {
+.toolbar-divider,
+.toolbar-divider.is-orphaned-divider {
   display: none;
+}
+
+#word-editor.is-format-painter {
+  cursor: copy;
 }
 
 .format-toolbar > .toolbar-group:not(:first-child) {
@@ -992,6 +1107,14 @@ body.is-dragging-toolbar * {
   border-radius: 1px;
   margin-top: 2px;
   background-color: var(--active-text-color, #1a1a1a);
+}
+
+.highlight-indicator {
+  width: 16px;
+  height: 3px;
+  border-radius: 1px;
+  margin-top: 2px;
+  background-color: var(--active-highlight-color, #FEF08A);
 }
 
 .color-popover {
@@ -4160,6 +4283,49 @@ body.is-dragging-toolbar * {
   align-items: center;
 }
 
+.context-menu-color-letter {
+  font-size: 0.78rem;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.context-menu-color-popover {
+  display: none;
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  z-index: 150;
+  padding: 0.35rem;
+  background-color: var(--chrome-bg);
+  border: 1px solid var(--chrome-border);
+  border-radius: 8px;
+  box-shadow: var(--paper-shadow);
+  gap: 0.25rem;
+}
+
+.context-menu-color-popover.is-open {
+  display: flex;
+}
+
+.context-menu-swatch {
+  appearance: none;
+  width: 18px;
+  height: 18px;
+  border: 1px solid var(--chrome-border);
+  border-radius: 4px;
+  padding: 0;
+  cursor: pointer;
+}
+
+.context-menu-swatch.is-none {
+  background: linear-gradient(135deg, transparent 44%, #dc2626 44%, #dc2626 56%, transparent 56%);
+  background-color: var(--paper-bg);
+}
+
+.context-menu-swatch:hover {
+  transform: scale(1.1);
+}
+
 .context-menu-spelling-btn {
   appearance: none;
   border: 1px solid transparent;
@@ -4260,7 +4426,7 @@ body.is-dragging-toolbar * {
 .spelling-underline-mark,
 .grammar-underline-mark {
   position: absolute;
-  height: 4px;
+  height: 3px;
   pointer-events: none;
   background-repeat: repeat-x;
   background-position: left bottom;
@@ -4285,7 +4451,43 @@ body.is-dragging-toolbar * {
   }
 }
 
-/* Style Editor Modal */
+/* Focus Mode */
+.app-shell[data-focus-mode="true"] .format-toolbar,
+.app-shell[data-focus-mode="true"] .dock-side,
+.app-shell[data-focus-mode="true"] .inspector-pane,
+.app-shell[data-focus-mode="true"] .inspector-edge-toggle,
+.app-shell[data-focus-mode="true"] .doc-tab-bar,
+.app-shell[data-focus-mode="true"] .toolbar-group.is-floating {
+  display: none;
+}
+
+.focus-mode-btn.is-active {
+  background-color: var(--accent-soft);
+  color: var(--accent);
+}
+
+/* Draft Recovery Banner */
+.draft-recovery-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.45rem 1rem;
+  background-color: var(--accent-soft);
+  border-bottom: 1px solid var(--accent);
+  color: var(--chrome-text);
+  font-size: 0.8rem;
+}
+
+.draft-recovery-banner.is-hidden {
+  display: none;
+}
+
+.draft-recovery-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
 .style-editor-backdrop {
   position: fixed;
   inset: 0;

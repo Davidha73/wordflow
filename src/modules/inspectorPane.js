@@ -36,6 +36,10 @@ const CMD_TIPS = {
   italic: { title: 'Italic', tip: 'Toggles italic emphasis on selected text.', shortcut: 'Ctrl+I' },
   underline: { title: 'Underline', tip: 'Toggles underline on selected text.', shortcut: 'Ctrl+U' },
   strikeThrough: { title: 'Strikethrough', tip: 'Draws a line through selected text.', shortcut: 'Toolbar' },
+  superscript: { title: 'Superscript', tip: 'Raises selected text above the baseline (e.g. x²).', shortcut: 'Toolbar' },
+  subscript: { title: 'Subscript', tip: 'Lowers selected text below the baseline (e.g. H₂O).', shortcut: 'Toolbar' },
+  indent: { title: 'Increase Indent', tip: 'Indents the active paragraph or list item further right.', shortcut: 'Toolbar' },
+  outdent: { title: 'Decrease Indent', tip: 'Moves the active paragraph or list item back left.', shortcut: 'Toolbar' },
   insertUnorderedList: { title: 'Bullet List', tip: 'Converts selection into a bulleted list.', shortcut: 'Toolbar' },
   insertOrderedList: { title: 'Numbered List', tip: 'Converts selection into a numbered list.', shortcut: 'Toolbar' },
   justifyLeft: { title: 'Align Left', tip: 'Aligns the active paragraph to the left margin.', shortcut: 'Toolbar' },
@@ -43,6 +47,87 @@ const CMD_TIPS = {
   justifyRight: { title: 'Align Right', tip: 'Aligns the active paragraph to the right margin.', shortcut: 'Toolbar' },
   justifyFull: { title: 'Justify', tip: 'Spreads text evenly between left and right margins.', shortcut: 'Toolbar' },
   removeFormat: { title: 'Clear Formatting', tip: 'Strips inline font, color, and style overrides.', shortcut: 'Toolbar' },
+};
+
+const ID_TIPS = {
+  'btn-copy': { title: 'Copy', tip: 'Copies the selected text or content to your clipboard.', shortcut: 'Ctrl+C' },
+  'btn-paste': { title: 'Paste', tip: 'Pastes text or content from your clipboard at the cursor.', shortcut: 'Ctrl+V' },
+  'btn-find-replace': { title: 'Find & Replace', tip: 'Search for text in the document and optionally replace it.', shortcut: 'Ctrl+F' },
+  'btn-format-painter': { title: 'Format Painter', tip: 'Click to copy formatting at the cursor, then drag across text to apply it.', shortcut: 'Toolbar' },
+  'font-family-select': { title: 'Font Family', tip: 'Changes the typeface of selected text or the current typing position.', shortcut: 'Toolbar' },
+  'font-size-select': { title: 'Font Size', tip: 'Changes the text size in points (pt).', shortcut: 'Toolbar' },
+  'btn-styles-menu': { title: 'Text Styles', tip: 'Apply Paragraph, Heading 1–3, or your saved custom styles.', shortcut: 'Cmd/Ctrl+Opt+0–3' },
+  'btn-open-style-editor': { title: 'Style Editor', tip: 'Create, preview, edit, or delete reusable custom text styles.', shortcut: 'Styles Menu' },
+  'btn-text-color': { title: 'Text Colour', tip: 'Choose a text colour from swatches or a custom colour picker.', shortcut: 'Toolbar' },
+  'btn-highlight-color': { title: 'Text Highlight', tip: 'Highlights selected text with a background colour or clears highlight.', shortcut: 'Toolbar' },
+  'btn-bottom-border': { title: 'Paragraph Border', tip: 'Toggles a horizontal divider line beneath the current paragraph.', shortcut: 'Toolbar' },
+  'line-spacing-select': { title: 'Line Spacing', tip: 'Adjusts vertical spacing between lines in your document.', shortcut: 'Toolbar' },
+  'page-margins-select': { title: 'Page Margins', tip: 'Sets narrow, normal, or wide margins around the page.', shortcut: 'Toolbar' },
+  'btn-insert-table': { title: 'Insert Table', tip: 'Insert a grid table with your chosen number of rows and columns.', shortcut: 'Toolbar' },
+  'btn-insert-shape': { title: 'Insert Shape', tip: 'Add rectangles, circles, arrows, callouts, and editable diagrams.', shortcut: 'Toolbar' },
+  'btn-shape-marquee': { title: 'Select Shapes', tip: 'Drag a selection box over the page to select one or more shapes.', shortcut: 'Toolbar' },
+  'btn-insert-image': { title: 'Insert Image', tip: 'Embed an image file from your computer into the document.', shortcut: 'Toolbar' },
+  'btn-insert-link': { title: 'Insert Link', tip: 'Turn selected text into a clickable hyperlink or edit an existing link.', shortcut: 'Ctrl+K' },
+  'btn-page-menu': { title: 'Page & Header/Footer', tip: 'Insert page breaks, edit headers & footers, or toggle page numbers.', shortcut: 'Toolbar' },
+  'btn-columns-menu': { title: 'Columns', tip: 'Split the document or a selected section into 1, 2, or 3 columns.', shortcut: 'Toolbar' },
+};
+
+const BLOCK_TIPS = {
+  P: { title: 'Paragraph', tip: 'Formats the active block as standard body text.', shortcut: 'Cmd/Ctrl+Opt+0' },
+  H1: { title: 'Heading 1', tip: 'Formats the active block as a top-level document heading.', shortcut: 'Cmd/Ctrl+Opt+1' },
+  H2: { title: 'Heading 2', tip: 'Formats the active block as a major section heading.', shortcut: 'Cmd/Ctrl+Opt+2' },
+  H3: { title: 'Heading 3', tip: 'Formats the active block as a subsection heading.', shortcut: 'Cmd/Ctrl+Opt+3' },
+  BLOCKQUOTE: { title: 'Blockquote', tip: 'Indents and styles the active paragraph as a quotation.', shortcut: 'Toolbar' },
+  PRE: { title: 'Code Block', tip: 'Formats the active block in a monospace code container.', shortcut: 'Toolbar' },
+};
+
+const MD_TIPS = {
+  h1: { title: 'Heading 1 (#)', tip: 'Prefixes the current line with # for a Markdown H1 heading.', shortcut: '# ' },
+  h2: { title: 'Heading 2 (##)', tip: 'Prefixes the current line with ## for a Markdown H2 heading.', shortcut: '## ' },
+  h3: { title: 'Heading 3 (###)', tip: 'Prefixes the current line with ### for a Markdown H3 heading.', shortcut: '### ' },
+  bold: { title: 'Bold (**text**)', tip: 'Wraps selected text in ** to make it bold in Markdown.', shortcut: '**text**' },
+  italic: { title: 'Italic (*text*)', tip: 'Wraps selected text in * for italic emphasis in Markdown.', shortcut: '*text*' },
+  strike: { title: 'Strikethrough (~~text~~)', tip: 'Wraps selected text in ~~ for strikethrough in Markdown.', shortcut: '~~text~~' },
+  code: { title: 'Inline Code (`code`)', tip: 'Wraps selected text in backticks for inline code.', shortcut: '`code`' },
+  ul: { title: 'Bullet List (- )', tip: 'Prefixes selected lines with - to create a Markdown bullet list.', shortcut: '- ' },
+  ol: { title: 'Numbered List (1. )', tip: 'Prefixes selected lines with numbers for an ordered list.', shortcut: '1. ' },
+  quote: { title: 'Blockquote (> )', tip: 'Prefixes selected lines with > for a Markdown blockquote.', shortcut: '> ' },
+  codeblock: { title: 'Code Block (```)', tip: 'Wraps selection in fenced ``` code block markers.', shortcut: '```' },
+  link: { title: 'Insert Link', tip: 'Inserts a Markdown hyperlink template [text](url).', shortcut: '[text](url)' },
+  hr: { title: 'Horizontal Rule', tip: 'Inserts a --- horizontal divider line in Markdown.', shortcut: '---' },
+};
+
+const HTML_TIPS = {
+  h1: { title: 'Heading 1 (<h1>)', tip: 'Wraps selection or line in <h1>...</h1> tags.', shortcut: '<h1>' },
+  h2: { title: 'Heading 2 (<h2>)', tip: 'Wraps selection or line in <h2>...</h2> tags.', shortcut: '<h2>' },
+  h3: { title: 'Heading 3 (<h3>)', tip: 'Wraps selection or line in <h3>...</h3> tags.', shortcut: '<h3>' },
+  p: { title: 'Paragraph (<p>)', tip: 'Wraps selection or line in <p>...</p> paragraph tags.', shortcut: '<p>' },
+  bold: { title: 'Bold (<strong>)', tip: 'Wraps selected text in <strong>...</strong>.', shortcut: '<strong>' },
+  italic: { title: 'Italic (<em>)', tip: 'Wraps selected text in <em>...</em>.', shortcut: '<em>' },
+  underline: { title: 'Underline (<u>)', tip: 'Wraps selected text in <u>...</u>.', shortcut: '<u>' },
+  strike: { title: 'Strikethrough (<s>)', tip: 'Wraps selected text in <s>...</s>.', shortcut: '<s>' },
+  code: { title: 'Inline Code (<code>)', tip: 'Wraps selected text in <code>...</code>.', shortcut: '<code>' },
+  ul: { title: 'Bullet List (<ul>)', tip: 'Wraps lines in an unordered <ul><li>...</li></ul> list.', shortcut: '<ul>' },
+  ol: { title: 'Numbered List (<ol>)', tip: 'Wraps lines in an ordered <ol><li>...</li></ol> list.', shortcut: '<ol>' },
+  quote: { title: 'Blockquote (<blockquote>)', tip: 'Wraps selection in a <blockquote>...</blockquote> block.', shortcut: '<blockquote>' },
+  codeblock: { title: 'Code Block (<pre><code>)', tip: 'Wraps selection in <pre><code>...</code></pre>.', shortcut: '<pre><code>' },
+  link: { title: 'Insert Link (<a>)', tip: 'Inserts an <a href="...">...</a> hyperlink tag.', shortcut: '<a>' },
+  hr: { title: 'Horizontal Rule (<hr />)', tip: 'Inserts an <hr /> horizontal divider tag.', shortcut: '<hr />' },
+  format: { title: 'Format HTML', tip: 'Pretty-prints and indents the HTML source code.', shortcut: 'Toolbar' },
+};
+
+const TXT_TIPS = {
+  upper: { title: 'UPPERCASE', tip: 'Converts selected text (or current line) to ALL CAPS.', shortcut: 'Toolbar' },
+  lower: { title: 'lowercase', tip: 'Converts selected text (or current line) to lowercase.', shortcut: 'Toolbar' },
+  title: { title: 'Title Case', tip: 'Capitalizes the first letter of each word in the selection.', shortcut: 'Toolbar' },
+  ul: { title: 'Bullet List (• )', tip: 'Prefixes selected lines with a bullet character (• ).', shortcut: '• ' },
+  ol: { title: 'Numbered List (1. )', tip: 'Prefixes selected lines with sequential numbers.', shortcut: '1. ' },
+  indent: { title: 'Indent', tip: 'Adds leading spaces to indent the selected lines.', shortcut: 'Toolbar' },
+  outdent: { title: 'Outdent', tip: 'Removes leading spaces from the selected lines.', shortcut: 'Toolbar' },
+  trim: { title: 'Trim Trailing Spaces', tip: 'Removes extra spaces at the end of every line.', shortcut: 'Toolbar' },
+  sort: { title: 'Sort Lines A–Z', tip: 'Alphabetically sorts the selected lines (or entire document).', shortcut: 'Toolbar' },
+  timestamp: { title: 'Insert Date & Time', tip: 'Inserts the current local date and time at the cursor.', shortcut: 'Toolbar' },
+  hr: { title: 'Insert Divider Line', tip: 'Inserts a horizontal line of dashes at the cursor.', shortcut: '---' },
 };
 
 function readStoredOpenState() {
@@ -166,6 +251,8 @@ export function createInspectorPane({
   getCustomStyles,
   applyCustomStyle,
   openStyleEditor,
+  applyTextColor,
+  applyHighlightColor,
 }) {
   if (!paneEl) {
     return {
@@ -361,6 +448,13 @@ export function createInspectorPane({
   }
 
   function renderToolTip(mode) {
+    if (wordEl?.classList.contains('is-format-painter')) {
+      const info = ID_TIPS['btn-format-painter'];
+      if (toolTitleEl) toolTitleEl.textContent = `${info.title} (Active)`;
+      if (toolTipEl) toolTipEl.textContent = info.tip;
+      if (toolShortcutEl) toolShortcutEl.textContent = 'Drag across text to apply • Click button to cancel';
+      return;
+    }
     const fallback = MODE_TIPS[mode] || MODE_TIPS.docx;
     const info = lastToolTip || fallback;
     if (toolTitleEl) toolTitleEl.textContent = info.title;
@@ -806,6 +900,20 @@ export function createInspectorPane({
       })
     );
     styleRow.appendChild(
+      createButton('Superscript', 'cmd:superscript', {
+        icon: 'superscript',
+        iconOnly: true,
+        active: document.queryCommandState?.('superscript'),
+      })
+    );
+    styleRow.appendChild(
+      createButton('Subscript', 'cmd:subscript', {
+        icon: 'subscript',
+        iconOnly: true,
+        active: document.queryCommandState?.('subscript'),
+      })
+    );
+    styleRow.appendChild(
       createButton('Clear Formatting', 'cmd:removeFormat', {
         icon: 'remove-formatting',
         iconOnly: true,
@@ -819,6 +927,66 @@ export function createInspectorPane({
       })
     );
     settingsBodyEl.appendChild(styleRow);
+
+    const colorLabel = document.createElement('div');
+    colorLabel.className = 'inspector-sublabel';
+    colorLabel.textContent = 'Text Colour';
+    settingsBodyEl.appendChild(colorLabel);
+
+    const colorRow = document.createElement('div');
+    colorRow.className = 'inspector-btn-row';
+    [
+      ['Auto', '#1a1a1a'],
+      ['Red', '#C00000'],
+      ['Blue', '#0070C0'],
+      ['Green', '#00B050'],
+      ['Orange', '#FFC000'],
+      ['Purple', '#7030A0'],
+    ].forEach(([name, hex]) => {
+      const sw = document.createElement('button');
+      sw.type = 'button';
+      sw.className = 'context-menu-swatch';
+      sw.title = `Text Colour: ${name}`;
+      sw.setAttribute('aria-label', `Text Colour: ${name}`);
+      sw.style.backgroundColor = hex;
+      sw.addEventListener('mousedown', (e) => e.preventDefault());
+      sw.addEventListener('click', () => {
+        applyTextColor?.(hex);
+        scheduleRefresh();
+      });
+      colorRow.appendChild(sw);
+    });
+    settingsBodyEl.appendChild(colorRow);
+
+    const hiliteLabel = document.createElement('div');
+    hiliteLabel.className = 'inspector-sublabel';
+    hiliteLabel.textContent = 'Text Highlight';
+    settingsBodyEl.appendChild(hiliteLabel);
+
+    const hiliteRow = document.createElement('div');
+    hiliteRow.className = 'inspector-btn-row';
+    [
+      ['None', ''],
+      ['Yellow', '#FEF08A'],
+      ['Green', '#BBF7D0'],
+      ['Cyan', '#A5F3FC'],
+      ['Pink', '#FBCFE8'],
+      ['Lavender', '#DDD6FE'],
+    ].forEach(([name, hex]) => {
+      const sw = document.createElement('button');
+      sw.type = 'button';
+      sw.className = hex ? 'context-menu-swatch' : 'context-menu-swatch is-none';
+      sw.title = `Highlight: ${name}`;
+      sw.setAttribute('aria-label', `Highlight: ${name}`);
+      if (hex) sw.style.backgroundColor = hex;
+      sw.addEventListener('mousedown', (e) => e.preventDefault());
+      sw.addEventListener('click', () => {
+        applyHighlightColor?.(hex);
+        scheduleRefresh();
+      });
+      hiliteRow.appendChild(sw);
+    });
+    settingsBodyEl.appendChild(hiliteRow);
 
     if (columnTools && columnTools.getDocumentColumns() > 1) {
       const colLabel = document.createElement('div');
@@ -1187,14 +1355,26 @@ export function createInspectorPane({
       }
     });
 
-    // Track toolbar hover/clicks for live tool tips
-    const toolbarRoot = document.querySelector('.format-toolbar');
-    toolbarRoot?.addEventListener('mouseover', (e) => {
-      const btn = e.target.closest('[data-cmd], [title]');
-      if (!btn) return;
-      const cmd = btn.dataset.cmd;
-      if (cmd && CMD_TIPS[cmd]) {
-        lastToolTip = CMD_TIPS[cmd];
+    // Track toolbar hover/clicks for live tool tips (including floating & side-docked toolbars)
+    const tipEventRoot = appShellEl || document.querySelector('.format-toolbar');
+    tipEventRoot?.addEventListener('mouseover', (e) => {
+      if (!e.target.closest('.toolbar-group')) return;
+      const btn = e.target.closest(
+        '[data-cmd], [data-md-action], [data-html-action], [data-txt-action], [data-block], [id], [title]'
+      );
+      if (!btn || btn.classList.contains('toolbar-group') || btn.classList.contains('toolbar-grip')) return;
+
+      const resolved =
+        (btn.dataset.cmd && CMD_TIPS[btn.dataset.cmd]) ||
+        (btn.dataset.mdAction && MD_TIPS[btn.dataset.mdAction]) ||
+        (btn.dataset.htmlAction && HTML_TIPS[btn.dataset.htmlAction]) ||
+        (btn.dataset.txtAction && TXT_TIPS[btn.dataset.txtAction]) ||
+        (btn.dataset.block && BLOCK_TIPS[btn.dataset.block]) ||
+        (btn.id && ID_TIPS[btn.id]) ||
+        null;
+
+      if (resolved) {
+        lastToolTip = resolved;
         scheduleRefresh();
       } else if (btn.title) {
         lastToolTip = {
@@ -1257,7 +1437,7 @@ export function createInspectorPane({
     setOpen,
     toggle,
     refresh: scheduleRefresh,
-    refreshGrammar: () => scheduleGrammarCheck(true),
+    refreshGrammar: () => runGrammarCheck(true),
     ignoreGrammarIssue: (issue) => {
       if (!issue) return;
       ignoredGrammarKeys.add(`${issue.kind}:${issue.problem_text}:${issue.start}`);
