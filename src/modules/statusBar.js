@@ -6,6 +6,7 @@ const ZOOM_STEP = 10;
 export function createStatusBar({ onZoomChange } = {}) {
   const filenameEl = document.getElementById('status-filename');
   const modeEl = document.getElementById('status-mode');
+  const autoSaveEl = document.getElementById('status-autosave');
   const wordsEl = document.getElementById('status-words');
   const charsEl = document.getElementById('status-chars');
   const zoomOutBtn = document.getElementById('btn-zoom-out');
@@ -35,10 +36,25 @@ export function createStatusBar({ onZoomChange } = {}) {
     }
   }
 
+  let currentThemePref = 'light';
+  const colorSchemeMedia =
+    typeof window !== 'undefined' && window.matchMedia
+      ? window.matchMedia('(prefers-color-scheme: dark)')
+      : null;
+
+  function resolveEffectiveTheme(theme) {
+    if (theme === 'system') {
+      return colorSchemeMedia?.matches ? 'dark' : 'light';
+    }
+    return theme === 'dark' ? 'dark' : 'light';
+  }
+
   function applyTheme(theme) {
-    document.documentElement.dataset.theme = theme;
+    const normalized = theme === 'dark' || theme === 'system' ? theme : 'light';
+    currentThemePref = normalized;
+    document.documentElement.dataset.theme = resolveEffectiveTheme(normalized);
     try {
-      localStorage.setItem(THEME_STORAGE_KEY, theme);
+      localStorage.setItem(THEME_STORAGE_KEY, normalized);
     } catch {
       // Ignore storage errors in restricted contexts
     }
@@ -51,7 +67,12 @@ export function createStatusBar({ onZoomChange } = {}) {
     } catch {
       saved = 'light';
     }
-    applyTheme(saved === 'dark' ? 'dark' : 'light');
+    applyTheme(saved);
+    colorSchemeMedia?.addEventListener('change', () => {
+      if (currentThemePref === 'system') {
+        document.documentElement.dataset.theme = resolveEffectiveTheme('system');
+      }
+    });
   }
 
   function updateFile({ fileName, isDirty }) {
@@ -74,6 +95,55 @@ export function createStatusBar({ onZoomChange } = {}) {
     charsEl.textContent = `${chars} ${chars === 1 ? 'char' : 'chars'}`;
   }
 
+  function formatIntervalLabel(seconds) {
+    if (seconds >= 60 && seconds % 60 === 0) {
+      return `${seconds / 60}m`;
+    }
+    return `${seconds}s`;
+  }
+
+  function setAutoSaveStatus({
+    intervalSeconds = 0,
+    isSaving = false,
+    hasFilePath = false,
+    lastSavedAt = null,
+  } = {}) {
+    if (!autoSaveEl) return;
+    autoSaveEl.classList.remove('is-off', 'is-active', 'is-saving');
+
+    if (!intervalSeconds || intervalSeconds <= 0) {
+      autoSaveEl.textContent = 'Auto-Save: Off';
+      autoSaveEl.title = 'Auto-Save is disabled (change in Settings)';
+      autoSaveEl.classList.add('is-off');
+      return;
+    }
+
+    const intervalLabel = formatIntervalLabel(intervalSeconds);
+    if (isSaving) {
+      autoSaveEl.textContent = 'Auto-Save: Saving…';
+      autoSaveEl.title = `Auto-Saving every ${intervalLabel}`;
+      autoSaveEl.classList.add('is-saving');
+      return;
+    }
+
+    if (!hasFilePath) {
+      autoSaveEl.textContent = `Auto-Save: ${intervalLabel} (save file first)`;
+      autoSaveEl.title = 'Save this document once to enable automatic saving';
+      autoSaveEl.classList.add('is-off');
+      return;
+    }
+
+    autoSaveEl.classList.add('is-active');
+    if (lastSavedAt instanceof Date && !Number.isNaN(lastSavedAt.getTime())) {
+      const timeStr = lastSavedAt.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+      autoSaveEl.textContent = `Auto-Save: ${intervalLabel} • Saved ${timeStr}`;
+      autoSaveEl.title = `Auto-Save enabled (every ${intervalLabel}). Last auto-saved at ${timeStr}.`;
+    } else {
+      autoSaveEl.textContent = `Auto-Save: ${intervalLabel}`;
+      autoSaveEl.title = `Auto-Save enabled (every ${intervalLabel})`;
+    }
+  }
+
   initTheme();
   applyZoom(100);
 
@@ -94,7 +164,9 @@ export function createStatusBar({ onZoomChange } = {}) {
     updateFile,
     updateMode,
     updateStats,
-    setTheme: (theme) => applyTheme(theme === 'dark' ? 'dark' : 'light'),
+    setAutoSaveStatus,
+    setTheme: (theme) => applyTheme(theme),
+    getTheme: () => currentThemePref,
     setZoom: (percent) => applyZoom(percent),
     setDefaultZoom,
   };

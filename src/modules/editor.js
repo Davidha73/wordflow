@@ -26,6 +26,7 @@ import { applyHtmlFormat } from './htmlToolbar.js';
 import { applyTxtAction } from './txtToolbar.js';
 import { createInspectorPane } from './inspectorPane.js';
 import { createStyleEditorModal } from './styleEditorModal.js';
+import { repositionGrammarHighlights } from './grammarHighlights.js';
 
 const FALLBACK_FONTS = [
   'Segoe UI',
@@ -230,6 +231,7 @@ export function createEditor({ onChange, onModeChange, onFontsLoaded }) {
     updateUndoRedoButtons();
     autoResizeSourceEditor();
     inspectorPane?.refresh?.();
+    requestAnimationFrame(() => repositionGrammarHighlights(wordEl));
     onChange?.({ markDirty: true });
   }
 
@@ -285,6 +287,7 @@ export function createEditor({ onChange, onModeChange, onFontsLoaded }) {
     onApplyFontSize: applyFontSize,
     onApplyTextColor: applyTextColor,
     onApplyHighlightColor: applyHighlightColor,
+    onToggleBottomBorder: toggleBottomBorder,
     onFindReplace: () => findReplace.open(false),
     onRichMutate: () => recordRichMutation(),
     onSourceMutate: () => handleSourceInput(),
@@ -327,6 +330,7 @@ export function createEditor({ onChange, onModeChange, onFontsLoaded }) {
     updateUndoRedoButtons();
     autoResizeSourceEditor();
     inspectorPane?.refresh?.();
+    requestAnimationFrame(() => repositionGrammarHighlights(wordEl));
     onChange?.({ markDirty: true });
   }
 
@@ -1082,6 +1086,7 @@ export function createEditor({ onChange, onModeChange, onFontsLoaded }) {
     updateUndoRedoButtons();
     autoResizeSourceEditor();
     inspectorPane?.refresh?.();
+    requestAnimationFrame(() => repositionGrammarHighlights(wordEl));
     onChange?.({ markDirty: true });
   }
 
@@ -1394,6 +1399,7 @@ export function createEditor({ onChange, onModeChange, onFontsLoaded }) {
     updateUndoRedoButtons();
     autoResizeSourceEditor();
     inspectorPane?.refresh?.();
+    requestAnimationFrame(() => repositionGrammarHighlights(wordEl));
     onChange?.({ markDirty: true });
   }
 
@@ -1531,6 +1537,7 @@ export function createEditor({ onChange, onModeChange, onFontsLoaded }) {
     updateUndoRedoButtons();
     autoResizeSourceEditor();
     inspectorPane?.refresh?.();
+    requestAnimationFrame(() => repositionGrammarHighlights(wordEl));
     onChange?.({ markDirty: true });
   }
 
@@ -1617,6 +1624,7 @@ export function createEditor({ onChange, onModeChange, onFontsLoaded }) {
     updateUndoRedoButtons();
     autoResizeSourceEditor();
     inspectorPane?.refresh?.();
+    requestAnimationFrame(() => repositionGrammarHighlights(wordEl));
     onChange?.({ markDirty: true });
   }
 
@@ -2303,6 +2311,9 @@ export function createEditor({ onChange, onModeChange, onFontsLoaded }) {
     });
   }
 
+  let configuredLineSpacing = 1.15;
+  let configuredPageMargins = 1;
+
   function clear() {
     masterRichHtml = '';
     lastRenderedSourceText = '';
@@ -2313,6 +2324,12 @@ export function createEditor({ onChange, onModeChange, onFontsLoaded }) {
     headerFooter.setState({ headerHtml: '', footerHtml: '', showPageNumbers: true }, { silent: true });
     wordEl.innerHTML = '';
     delete wordEl.dataset.columns;
+    defaultLineSpacing = configuredLineSpacing;
+    pageMarginInches = configuredPageMargins;
+    wordEl.style.setProperty('--doc-line-height', String(defaultLineSpacing));
+    wordEl.style.setProperty('--doc-margin', `${pageMarginInches}in`);
+    if (lineSpacingSelectEl) lineSpacingSelectEl.value = String(defaultLineSpacing);
+    if (pageMarginsSelectEl) pageMarginsSelectEl.value = String(pageMarginInches);
     sourceEl.value = '';
     pageShapes.clear();
     history.reset('', []);
@@ -2353,8 +2370,36 @@ export function createEditor({ onChange, onModeChange, onFontsLoaded }) {
     defaultMode = nextMode;
   }
 
+  function setDefaultLineSpacing(val) {
+    const num = Number(val);
+    if (!num) return;
+    configuredLineSpacing = num;
+    defaultLineSpacing = num;
+    wordEl.style.setProperty('--doc-line-height', String(num));
+    if (lineSpacingSelectEl) lineSpacingSelectEl.value = String(num);
+  }
+
+  function setDefaultPageMargins(val) {
+    const num = Number(val);
+    if (!num) return;
+    configuredPageMargins = num;
+    pageMarginInches = num;
+    wordEl.style.setProperty('--doc-margin', `${num}in`);
+    if (pageMarginsSelectEl) pageMarginsSelectEl.value = String(num);
+    pageBreaks.sync();
+  }
+
+  function setMeasurementUnit(unit) {
+    const unitSelectEl = document.getElementById('shape-size-unit');
+    if (!unitSelectEl || !['mm', 'cm', 'in'].includes(unit)) return;
+    if (unitSelectEl.value !== unit) {
+      unitSelectEl.value = unit;
+      unitSelectEl.dispatchEvent(new Event('change', { bubbles: true }));
+    }
+  }
+
   bindEvents();
-  initDockableToolbars({ appShellEl: document.querySelector('.app-shell') });
+  const dockableToolbars = initDockableToolbars({ appShellEl: document.querySelector('.app-shell') });
   const inspectorPane = createInspectorPane({
     paneEl: document.getElementById('inspector-pane'),
     toggleBtnEl: document.getElementById('btn-inspector-toggle'),
@@ -2406,10 +2451,27 @@ export function createEditor({ onChange, onModeChange, onFontsLoaded }) {
     execBlockCommand,
     getDefaultFont: () => defaultFont,
     getDefaultFontSize: () => defaultFontSize,
+    getDefaultLineSpacing: () => String(configuredLineSpacing),
+    getDefaultPageMargins: () => String(configuredPageMargins),
     getDefaultMode: () => defaultMode,
     setDefaultFont,
     setDefaultFontSize,
+    setDefaultLineSpacing,
+    setDefaultPageMargins,
+    setMeasurementUnit,
     setDefaultMode,
+    setProofingOptions: ({ spellcheck, grammar } = {}) => {
+      if (typeof spellcheck === 'boolean') {
+        wordEl.setAttribute('spellcheck', String(spellcheck));
+      }
+      inspectorPane?.setProofingOptions?.({ spellcheck, grammar });
+    },
+    refreshGrammar: () => inspectorPane?.refreshGrammar?.(),
+    resetWorkspaceLayout: () => {
+      dockableToolbars?.resetLayout?.();
+      dockableToolbars?.syncDividers?.();
+      inspectorPane?.resetLayout?.();
+    },
     setCustomStyles: (styles) => {
       styleEditorModal?.setCustomStyles(styles);
       renderToolbarCustomStyles();

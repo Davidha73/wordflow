@@ -158,6 +158,13 @@ fn open_external_url(url: String) -> Result<(), String> {
     Ok(())
 }
 
+#[tauri::command]
+fn print_document(window: tauri::WebviewWindow) -> Result<(), String> {
+    window
+        .print()
+        .map_err(|err| format!("Failed to open print dialog: {err}"))
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
@@ -183,8 +190,12 @@ pub fn run() {
             get_system_fonts,
             show_in_explorer,
             open_external_url,
+            print_document,
             spellcheck::check_word_spelling,
             spellcheck::add_word_to_dictionary,
+            spellcheck::get_custom_dictionary,
+            spellcheck::remove_word_from_dictionary,
+            spellcheck::clear_custom_dictionary,
             grammar::check_grammar
         ])
         .run(tauri::generate_context!())

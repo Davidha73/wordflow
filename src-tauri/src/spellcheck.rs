@@ -37,6 +37,18 @@ fn ensure_loaded(app: &tauri::AppHandle) -> &'static RwLock<Option<HashSet<Strin
     lock
 }
 
+fn persist_learned_words(app: &tauri::AppHandle, set: &HashSet<String>) {
+    if let Some(path) = dictionary_path(app) {
+        if let Some(parent) = path.parent() {
+            let _ = fs::create_dir_all(parent);
+        }
+        let mut words: Vec<&String> = set.iter().collect();
+        words.sort();
+        let body: String = words.into_iter().cloned().collect::<Vec<_>>().join("\n");
+        let _ = fs::write(path, body);
+    }
+}
+
 fn record_learned_word(app: &tauri::AppHandle, word: &str) {
     let normalized = word.trim().to_lowercase();
     if normalized.is_empty() {
@@ -46,17 +58,21 @@ fn record_learned_word(app: &tauri::AppHandle, word: &str) {
     if let Ok(mut guard) = lock.write() {
         let set = guard.get_or_insert_with(HashSet::new);
         if set.insert(normalized) {
-            if let Some(path) = dictionary_path(app) {
-                if let Some(parent) = path.parent() {
-                    let _ = fs::create_dir_all(parent);
-                }
-                let mut words: Vec<&String> = set.iter().collect();
-                words.sort();
-                let body: String = words.into_iter().cloned().collect::<Vec<_>>().join("\n");
-                let _ = fs::write(path, body);
-            }
+            persist_learned_words(app, set);
         }
     }
+}
+
+fn sorted_learned_words(app: &tauri::AppHandle) -> Vec<String> {
+    let lock = ensure_loaded(app);
+    if let Ok(guard) = lock.read() {
+        if let Some(set) = guard.as_ref() {
+            let mut words: Vec<String> = set.iter().cloned().collect();
+            words.sort();
+            return words;
+        }
+    }
+    Vec::new()
 }
 
 pub fn is_word_learned(app: &tauri::AppHandle, word: &str) -> bool {
@@ -236,6 +252,19 @@ mod mac_spell {
         let ns_word = NSString::from_str(trimmed);
         unsafe { msg_send![&*checker, hasLearnedWord: &*ns_word] }
     }
+
+    pub fn unlearn_word(word: &str) {
+        let trimmed = word.trim();
+        if trimmed.is_empty() {
+            return;
+        }
+        if let Some(checker) = shared_checker() {
+            let ns_word = NSString::from_str(trimmed);
+            unsafe {
+                let _: () = msg_send![&*checker, unlearnWord: &*ns_word];
+            }
+        }
+    }
 }
 
 #[tauri::command]
@@ -271,4 +300,51 @@ pub fn add_word_to_dictionary(app: tauri::AppHandle, word: String) -> Result<(),
         let _ = word;
         Ok(())
     }
+}
+
+#[tauri::command]
+pub fn get_custom_dictionary(app: tauri::AppHandle) -> Vec<String> {
+    sorted_learned_words(&app)
+}
+
+#[tauri::command]
+pub fn remove_word_from_dictionary(app: tauri::AppHandle, word: String) -> Result<Vec<String>, String> {
+    let normalized = word.trim().to_lowercase();
+    if !normalized.is_empty() {
+        let lock = ensure_loaded(&app);
+        if let Ok(mut guard) = lock.write() {
+            if let Some(set) = guard.as_mut() {
+                set.remove(&normalized);
+                persist_learned_words(&app, set);
+            }
+        }
+        #[cfg(target_os = "macos")]
+        {
+            mac_spell::unlearn_word(&normalized);
+        }
+    }
+    Ok(sorted_learned_words(&app))
+}
+
+#[tauri::command]
+pub fn clear_custom_dictionary(app: tauri::AppHandle) -> Result<(), String> {
+    let existing = sorted_learned_words(&app);
+    let lock = ensure_loaded(&app);
+    if let Ok(mut guard) = lock.write() {
+        if let Some(set) = guard.as_mut() {
+            set.clear();
+            persist_learned_words(&app, set);
+        }
+    }
+    #[cfg(target_os = "macos")]
+    {
+        for w in existing {
+            mac_spell::unlearn_word(&w);
+        }
+    }
+    #[cfg(not(target_os = "macos"))]
+    {
+        let _ = existing;
+    }
+    Ok(())
 }

@@ -2,6 +2,7 @@ const HIGHLIGHT_NAME = 'grammar-error';
 const SPELLING_HIGHLIGHT_NAME = 'spelling-error';
 const WORD_CHAR_RE = /[A-Za-z0-9_]/;
 let activeEntries = [];
+let activeOverlayEntries = [];
 let underlineLayerEl = null;
 
 function ensureUnderlineLayer(wordEl) {
@@ -52,6 +53,7 @@ function renderUnderlineOverlay(wordEl, entries) {
  */
 export function clearGrammarHighlights() {
   activeEntries = [];
+  activeOverlayEntries = [];
   if (underlineLayerEl) {
     underlineLayerEl.innerHTML = '';
   }
@@ -180,6 +182,7 @@ export function updateGrammarHighlights(wordEl, issues) {
   }
 
   activeEntries = nextEntries;
+  activeOverlayEntries = overlayEntries;
   renderUnderlineOverlay(wordEl, overlayEntries);
   if (typeof CSS === 'undefined' || !CSS.highlights || typeof Highlight === 'undefined') {
     return;
@@ -194,4 +197,16 @@ export function updateGrammarHighlights(wordEl, issues) {
   } else {
     CSS.highlights.delete(SPELLING_HIGHLIGHT_NAME);
   }
+}
+
+/**
+ * Repositions existing underline overlay marks after layout shifts (e.g. bottom border toggle, zoom, resize).
+ */
+export function repositionGrammarHighlights(wordEl) {
+  if (!wordEl || activeOverlayEntries.length === 0) return;
+  const connected = activeOverlayEntries.filter(
+    ({ range }) => range?.startContainer?.isConnected && range?.endContainer?.isConnected
+  );
+  activeOverlayEntries = connected;
+  renderUnderlineOverlay(wordEl, connected);
 }

@@ -290,6 +290,8 @@ export function createInspectorPane({
   const ignoredGrammarKeys = new Set();
   let grammarTimer = 0;
   let lastGrammarText = null;
+  let spellcheckEnabled = true;
+  let grammarEnabled = true;
 
   function clampFloatingPos(x, y) {
     const paneW = paneEl.offsetWidth || 272;
@@ -1269,7 +1271,8 @@ export function createInspectorPane({
 
   async function runGrammarCheck(force = false) {
     const mode = getMode ? getMode() : 'docx';
-    if (mode !== 'docx') {
+    if (mode !== 'docx' || (!spellcheckEnabled && !grammarEnabled)) {
+      lastGrammarText = null;
       clearGrammarHighlights();
       return;
     }
@@ -1285,9 +1288,11 @@ export function createInspectorPane({
 
     try {
       const rawIssues = await invoke('check_grammar', { text });
-      const issues = (Array.isArray(rawIssues) ? rawIssues : []).filter(
-        (item) => !ignoredGrammarKeys.has(`${item.kind}:${item.problem_text}:${item.start}`)
-      );
+      const issues = (Array.isArray(rawIssues) ? rawIssues : []).filter((item) => {
+        if (item.kind === 'Spelling' && !spellcheckEnabled) return false;
+        if (item.kind !== 'Spelling' && !grammarEnabled) return false;
+        return !ignoredGrammarKeys.has(`${item.kind}:${item.problem_text}:${item.start}`);
+      });
       updateGrammarHighlights(wordEl, issues);
     } catch {
       clearGrammarHighlights();
@@ -1438,6 +1443,20 @@ export function createInspectorPane({
     toggle,
     refresh: scheduleRefresh,
     refreshGrammar: () => runGrammarCheck(true),
+    setProofingOptions: ({ spellcheck, grammar } = {}) => {
+      if (typeof spellcheck === 'boolean') spellcheckEnabled = spellcheck;
+      if (typeof grammar === 'boolean') grammarEnabled = grammar;
+      runGrammarCheck(true);
+    },
+    resetLayout: () => {
+      layout = { mode: 'docked', dock: 'right', x: null, y: 112 };
+      try {
+        localStorage.removeItem(LAYOUT_STORAGE_KEY);
+      } catch {
+        // Ignore storage errors
+      }
+      applyLayoutState();
+    },
     ignoreGrammarIssue: (issue) => {
       if (!issue) return;
       ignoredGrammarKeys.add(`${issue.kind}:${issue.problem_text}:${issue.start}`);

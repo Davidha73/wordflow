@@ -1,9 +1,10 @@
+import { invoke } from '@tauri-apps/api/core';
 import { open, save, confirm, message } from '@tauri-apps/plugin-dialog';
-import { readFile, readTextFile, stat, writeFile, writeTextFile } from '@tauri-apps/plugin-fs';
+import { exists, readFile, readTextFile, rename, stat, writeFile, writeTextFile } from '@tauri-apps/plugin-fs';
 import mammoth from 'mammoth';
 import { htmlToDocxBytes } from './docxExporter.js';
 import { escapeHtml } from './formatters.js';
-import { addRecentDocument } from './settingsStore.js';
+import { addRecentDocument, removeRecentDocument } from './settingsStore.js';
 
 const SUPPORTED_EXTENSIONS = new Set(['docx', 'md', 'txt', 'html', 'htm']);
 
@@ -194,24 +195,133 @@ export function createFileService({ editor, onStateChange, initialHasOpenDocumen
     notify();
   }
 
-  async function newDocument() {
+  async function newDocument(modeOverride = null) {
+    const validMode = ['docx', 'md', 'html', 'txt'].includes(modeOverride) ? modeOverride : null;
     if (tabManager?.isEnabled()) {
       hasOpenDocument = true;
       currentPath = null;
       isDirty = false;
       editor.clear();
+      if (validMode) {
+        editor.setMode(validMode);
+      }
       tabManager.createTab({ filePath: null, isDirty: false });
       notify();
       return;
     }
-    return resetDocument(true);
+    await resetDocument(true);
+    if (validMode && hasOpenDocument) {
+      editor.setMode(validMode);
+    }
   }
 
   async function newFromTemplate(template) {
-    if (!template?.html) return newDocument();
+    if (!template || (!template.html && !template.content)) return newDocument();
     await newDocument();
-    editor.loadDocumentContent('docx', template.html);
+    const targetMode = template.mode || 'docx';
+    const payload = targetMode === 'docx' ? (template.html || '') : (template.content || '');
+    editor.loadDocumentContent(targetMode, payload);
     markDirty(true);
+  }
+
+  async function duplicateDocument() {
+    if (!hasOpenDocument) return;
+    const mode = editor.getMode();
+    const content =
+      mode === 'docx'
+        ? editor.getHtml()
+        : mode === 'md'
+          ? editor.getMarkdown()
+          : editor.getPlainText();
+    await newDocument();
+    editor.loadDocumentContent(mode, content);
+    markDirty(true);
+  }
+
+  async function renameDocument(nextNameRaw) {
+    if (!hasOpenDocument) return false;
+    const trimmed = String(nextNameRaw || '').trim();
+    if (!trimmed) return false;
+
+    if (!currentPath) {
+      const ext = editor.getMode() || 'docx';
+      const finalName = /\.[a-z0-9]+$/i.test(trimmed) ? trimmed : `${trimmed}.${ext}`;
+      if (tabManager?.isEnabled()) {
+        const active = tabManager.getActiveTab();
+        if (active) {
+          active.fileName = finalName;
+          tabManager.render?.();
+        }
+      }
+      await onStateChange?.({
+        filePath: null,
+        fileName: finalName,
+        isDirty,
+        hasOpenDocument,
+      });
+      return true;
+    }
+
+    const sepIdx = Math.max(currentPath.lastIndexOf('/'), currentPath.lastIndexOf('\\'));
+    const dir = sepIdx >= 0 ? currentPath.slice(0, sepIdx + 1) : '';
+    const oldExt = getExtension(currentPath);
+    const finalName =
+      /\.[a-z0-9]+$/i.test(trimmed) || !oldExt ? trimmed : `${trimmed}.${oldExt}`;
+    const nextPath = `${dir}${finalName}`;
+    if (nextPath === currentPath) return true;
+
+    try {
+      if (await exists(nextPath)) {
+        await message(`A file named "${finalName}" already exists in this folder.`, {
+          title: 'Rename Failed',
+          kind: 'error',
+        });
+        return false;
+      }
+      const oldPath = currentPath;
+      await rename(oldPath, nextPath);
+      currentPath = nextPath;
+      if (tabManager?.isEnabled()) {
+        tabManager.updateActiveTab({ filePath: nextPath, isDirty });
+      }
+      await removeRecentDocument(oldPath);
+      await recordRecentFile(nextPath, editor.getMode());
+      await notify();
+      return true;
+    } catch (err) {
+      await message(`Unable to rename file: ${err?.message || err}`, {
+        title: 'Rename Error',
+        kind: 'error',
+      });
+      return false;
+    }
+  }
+
+  async function revertDocument() {
+    if (!hasOpenDocument || !currentPath) return;
+    if (isDirty) {
+      const ok = await confirm('Discard all unsaved changes and reload the saved file?', {
+        title: 'Revert to Saved',
+        kind: 'warning',
+      });
+      if (!ok) return;
+    }
+    const targetPath = currentPath;
+    isDirty = false;
+    if (tabManager?.isEnabled()) {
+      tabManager.updateActiveTab({ isDirty: false });
+    }
+    await openFileByPath(targetPath);
+  }
+
+  function getTemplatePayload() {
+    const mode = editor.getMode();
+    if (mode === 'docx') {
+      const html = editor.getHtml();
+      return { mode, html, content: '' };
+    }
+    const content = mode === 'md' ? editor.getMarkdown() : editor.getPlainText();
+    return { mode, html: '', content };
   }
 
   function selectTab(tab) {
@@ -448,10 +558,14 @@ export function createFileService({ editor, onStateChange, initialHasOpenDocumen
     }
   }
 
-  function printDocument() {
+  async function printDocument() {
     if (!hasOpenDocument) return;
     editor.syncForPrint();
-    window.print();
+    try {
+      await invoke('print_document');
+    } catch {
+      window.print();
+    }
   }
 
   function hasUnsavedChanges() {
@@ -498,6 +612,10 @@ export function createFileService({ editor, onStateChange, initialHasOpenDocumen
     closeTab,
     newDocument,
     newFromTemplate,
+    duplicateDocument,
+    renameDocument,
+    revertDocument,
+    getTemplatePayload,
     closeDocument,
     openDocument,
     openFileByPath,
@@ -509,6 +627,9 @@ export function createFileService({ editor, onStateChange, initialHasOpenDocumen
     clearRecoveryDraft,
     restoreRecoveryDraft,
     isDirty: () => isDirty,
+    hasFilePath: () => Boolean(currentPath),
+    getCurrentPath: () => currentPath,
+    getCurrentFileName: () => getBasename(currentPath),
     hasUnsavedChanges,
     getDirtyFileNames,
     saveAllDirty,

@@ -49,11 +49,43 @@
                   <span>New</span>
                   <span class="doc-pill-shortcut">Ctrl+N</span>
                 </button>
+                <div class="convert-menu-wrap" id="template-menu-wrap">
+                  <button
+                    type="button"
+                    class="doc-pill-item"
+                    role="menuitem"
+                    id="btn-new-template"
+                    title="Start from a Template"
+                    aria-haspopup="menu"
+                    aria-expanded="false"
+                  >
+                    <i data-lucide="layout-template" class="lucide-xs"></i>
+                    <span>New from Template</span>
+                    <i data-lucide="chevron-down" class="lucide-xs doc-pill-subchevron"></i>
+                  </button>
+                  <div class="convert-popover" id="template-popover" role="menu" aria-label="New from template"></div>
+                </div>
                 <button type="button" class="doc-pill-item" role="menuitem" id="btn-open" title="Open File (Ctrl+O)">
                   <i data-lucide="folder-open" class="lucide-xs"></i>
                   <span>Open…</span>
                   <span class="doc-pill-shortcut">Ctrl+O</span>
                 </button>
+                <div class="convert-menu-wrap" id="recent-menu-wrap">
+                  <button
+                    type="button"
+                    class="doc-pill-item"
+                    role="menuitem"
+                    id="btn-open-recent"
+                    title="Open Recent Document"
+                    aria-haspopup="menu"
+                    aria-expanded="false"
+                  >
+                    <i data-lucide="clock" class="lucide-xs"></i>
+                    <span>Open Recent</span>
+                    <i data-lucide="chevron-down" class="lucide-xs doc-pill-subchevron"></i>
+                  </button>
+                  <div class="convert-popover" id="recent-popover" role="menu" aria-label="Recent documents"></div>
+                </div>
                 <div class="doc-pill-divider" role="separator"></div>
                 <button type="button" class="doc-pill-item" role="menuitem" id="btn-save" title="Save (Ctrl+S)">
                   <i data-lucide="save" class="lucide-xs"></i>
@@ -65,6 +97,27 @@
                   <span>Save As…</span>
                   <span class="doc-pill-shortcut">Ctrl+Shift+S</span>
                 </button>
+                <button type="button" class="doc-pill-item" role="menuitem" id="btn-save-template" title="Save Current Document as Template">
+                  <i data-lucide="bookmark-plus" class="lucide-xs"></i>
+                  <span>Save as Template…</span>
+                </button>
+                <button type="button" class="doc-pill-item" role="menuitem" id="btn-duplicate" title="Make a Copy in New Tab">
+                  <i data-lucide="copy" class="lucide-xs"></i>
+                  <span>Duplicate</span>
+                </button>
+                <button type="button" class="doc-pill-item" role="menuitem" id="btn-rename" title="Rename Document">
+                  <i data-lucide="pencil" class="lucide-xs"></i>
+                  <span>Rename…</span>
+                </button>
+                <button type="button" class="doc-pill-item" role="menuitem" id="btn-revert" title="Discard Changes and Reload Saved File">
+                  <i data-lucide="rotate-ccw" class="lucide-xs"></i>
+                  <span>Revert to Saved</span>
+                </button>
+                <button type="button" class="doc-pill-item" role="menuitem" id="btn-show-finder" title="Reveal File in Finder">
+                  <i data-lucide="folder-search" class="lucide-xs"></i>
+                  <span>Show in Finder</span>
+                </button>
+                <div class="doc-pill-divider" role="separator"></div>
                 <div class="convert-menu-wrap" id="convert-menu-wrap">
                   <button
                     type="button"
@@ -1275,6 +1328,7 @@
         <div class="status-left">
           <span class="status-item" id="status-filename" title="Current document">Untitled.docx</span>
           <span class="status-badge" id="status-mode">Mode: Word (.docx)</span>
+          <span class="status-badge status-autosave is-off" id="status-autosave" title="Auto-Save status">Auto-Save: Off</span>
         </div>
 
         <div class="status-right">
@@ -1335,6 +1389,7 @@
         </button>
       </div>
       <div class="settings-drawer-body" id="settings-drawer-body">
+        <div class="settings-section-header">Startup &amp; Files</div>
         <div class="settings-row">
           <label class="settings-label" for="settings-start-in">Start In</label>
           <select id="settings-start-in" class="settings-select">
@@ -1351,6 +1406,24 @@
             <option value="txt">.txt (Plain Text)</option>
           </select>
         </div>
+        <div class="settings-row">
+          <label class="settings-label" for="settings-autosave">Auto-Save</label>
+          <select id="settings-autosave" class="settings-select">
+            <option value="0" selected>Off</option>
+            <option value="30">Every 30 seconds</option>
+            <option value="60">Every 1 minute</option>
+            <option value="300">Every 5 minutes</option>
+          </select>
+        </div>
+        <div class="settings-row">
+          <span class="settings-label">Recent Documents</span>
+          <div class="settings-action-group">
+            <span class="settings-inline-status" id="settings-clear-recent-status"></span>
+            <button type="button" class="settings-footer-btn" id="btn-settings-clear-recent">Clear List</button>
+          </div>
+        </div>
+
+        <div class="settings-section-header">Document Defaults</div>
         <div class="settings-row">
           <label class="settings-label" for="settings-default-font">Default Font</label>
           <select id="settings-default-font" class="settings-select">
@@ -1377,6 +1450,23 @@
             <option value="48pt">48pt</option>
             <option value="72pt">72pt</option>
             <option value="96pt">96pt</option>
+          </select>
+        </div>
+        <div class="settings-row">
+          <label class="settings-label" for="settings-default-line-spacing">Default Line Spacing</label>
+          <select id="settings-default-line-spacing" class="settings-select">
+            <option value="1.0">1.0×</option>
+            <option value="1.15" selected>1.15×</option>
+            <option value="1.5">1.5×</option>
+            <option value="2.0">2.0×</option>
+          </select>
+        </div>
+        <div class="settings-row">
+          <label class="settings-label" for="settings-default-margins">Default Page Margins</label>
+          <select id="settings-default-margins" class="settings-select">
+            <option value="1" selected>Normal (1 in)</option>
+            <option value="0.5">Narrow (0.5 in)</option>
+            <option value="1.5">Wide (1.5 in)</option>
           </select>
         </div>
         <div class="settings-row">
@@ -1417,15 +1507,53 @@
           </select>
         </div>
         <div class="settings-row">
-          <label class="settings-label" for="settings-tabs-enabled">Document Tabs</label>
-          <input type="checkbox" id="settings-tabs-enabled" class="settings-switch" checked />
+          <label class="settings-label" for="settings-measurement-unit">Measurement Units</label>
+          <select id="settings-measurement-unit" class="settings-select">
+            <option value="mm" selected>Millimetres (mm)</option>
+            <option value="cm">Centimetres (cm)</option>
+            <option value="in">Inches (in)</option>
+          </select>
         </div>
+
+        <div class="settings-section-header">Writing &amp; Proofing</div>
+        <div class="settings-row">
+          <label class="settings-label" for="settings-spellcheck-enabled">Spellcheck</label>
+          <input type="checkbox" id="settings-spellcheck-enabled" class="settings-switch" checked />
+        </div>
+        <div class="settings-row">
+          <label class="settings-label" for="settings-grammar-enabled">Grammar Checks</label>
+          <input type="checkbox" id="settings-grammar-enabled" class="settings-switch" checked />
+        </div>
+        <div class="settings-row">
+          <span class="settings-label">Custom Dictionary</span>
+          <button type="button" class="settings-footer-btn" id="btn-manage-dictionary">Manage…</button>
+        </div>
+
+        <div class="settings-section-header">Appearance &amp; Workspace</div>
         <div class="settings-row">
           <label class="settings-label" for="settings-theme">UI Theme</label>
           <select id="settings-theme" class="settings-select">
             <option value="light" selected>Light</option>
             <option value="dark">Dark</option>
+            <option value="system">System (Auto)</option>
           </select>
+        </div>
+        <div class="settings-row">
+          <label class="settings-label" for="settings-tabs-enabled">Document Tabs</label>
+          <input type="checkbox" id="settings-tabs-enabled" class="settings-switch" checked />
+        </div>
+        <div class="settings-row">
+          <span class="settings-label">Workspace Layout</span>
+          <div class="settings-action-group">
+            <span class="settings-inline-status" id="settings-reset-layout-status"></span>
+            <button type="button" class="settings-footer-btn" id="btn-settings-reset-layout">Reset Layout</button>
+          </div>
+        </div>
+
+        <div class="settings-section-header">Maintenance</div>
+        <div class="settings-row">
+          <span class="settings-label">What's New</span>
+          <button type="button" class="settings-footer-btn" id="btn-whats-new">View Updates…</button>
         </div>
         <div class="settings-row">
           <span class="settings-label">Bugs &amp; Updates</span>
@@ -1433,7 +1561,7 @@
         </div>
       </div>
       <div class="settings-drawer-footer">
-        <span class="settings-version" id="settings-version">v0.1.0</span>
+        <span class="settings-version" id="settings-version">v0.2.0</span>
         <button type="button" class="settings-footer-btn" id="btn-cancel-settings">Cancel</button>
         <button type="button" class="settings-footer-btn is-primary" id="btn-save-settings">Save</button>
       </div>
@@ -1465,6 +1593,167 @@
         <span class="notes-modal-status" id="notes-modal-status"></span>
         <button type="button" class="settings-footer-btn" id="btn-export-notes">Save As…</button>
         <button type="button" class="settings-footer-btn is-primary" id="btn-save-notes">Save</button>
+      </div>
+    </section>
+
+    <div class="dict-modal-backdrop" id="dict-modal-backdrop" aria-hidden="true"></div>
+    <section
+      class="dict-modal"
+      id="dict-modal"
+      role="dialog"
+      aria-modal="true"
+      aria-label="Custom Dictionary"
+      aria-hidden="true"
+    >
+      <div class="dict-modal-header">
+        <span class="settings-drawer-title">Custom Dictionary</span>
+        <button type="button" class="settings-close-btn" id="btn-close-dict" title="Close" aria-label="Close">
+          <i data-lucide="x" class="lucide-sm"></i>
+        </button>
+      </div>
+      <div class="dict-modal-body" id="dict-modal-body">
+        <p class="dict-modal-empty" id="dict-modal-empty">No custom words added yet.</p>
+        <div class="dict-words-list" id="dict-words-list"></div>
+      </div>
+      <div class="dict-modal-footer">
+        <span class="notes-modal-status" id="dict-modal-status"></span>
+        <button type="button" class="settings-footer-btn" id="btn-clear-dict">Clear All</button>
+        <button type="button" class="settings-footer-btn is-primary" id="btn-done-dict">Done</button>
+      </div>
+    </section>
+
+    <div class="prompt-modal-backdrop" id="rename-modal-backdrop" aria-hidden="true"></div>
+    <section
+      class="prompt-modal"
+      id="rename-modal"
+      role="dialog"
+      aria-modal="true"
+      aria-label="Rename Document"
+      aria-hidden="true"
+    >
+      <div class="prompt-modal-header">
+        <span class="settings-drawer-title">Rename Document</span>
+        <button type="button" class="settings-close-btn" id="btn-close-rename" title="Close" aria-label="Close">
+          <i data-lucide="x" class="lucide-sm"></i>
+        </button>
+      </div>
+      <div class="prompt-modal-body">
+        <label class="prompt-modal-field">
+          <span>New File Name</span>
+          <input type="text" id="rename-input" class="prompt-modal-input" placeholder="Document.docx" />
+        </label>
+      </div>
+      <div class="prompt-modal-footer">
+        <button type="button" class="settings-footer-btn" id="btn-cancel-rename">Cancel</button>
+        <button type="button" class="settings-footer-btn is-primary" id="btn-confirm-rename">Rename</button>
+      </div>
+    </section>
+
+    <div class="prompt-modal-backdrop" id="template-modal-backdrop" aria-hidden="true"></div>
+    <section
+      class="prompt-modal"
+      id="template-modal"
+      role="dialog"
+      aria-modal="true"
+      aria-label="Save as Template"
+      aria-hidden="true"
+    >
+      <div class="prompt-modal-header">
+        <span class="settings-drawer-title">Save as Template</span>
+        <button type="button" class="settings-close-btn" id="btn-close-template" title="Close" aria-label="Close">
+          <i data-lucide="x" class="lucide-sm"></i>
+        </button>
+      </div>
+      <div class="prompt-modal-body">
+        <label class="prompt-modal-field">
+          <span>Template Name</span>
+          <input type="text" id="template-name-input" class="prompt-modal-input" placeholder="e.g. Weekly Status Report" />
+        </label>
+        <label class="prompt-modal-field">
+          <span>Short Description (optional)</span>
+          <input type="text" id="template-desc-input" class="prompt-modal-input" placeholder="e.g. Summary, highlights & next steps" />
+        </label>
+      </div>
+      <div class="prompt-modal-footer">
+        <button type="button" class="settings-footer-btn" id="btn-cancel-template">Cancel</button>
+        <button type="button" class="settings-footer-btn is-primary" id="btn-confirm-template">Save Template</button>
+      </div>
+    </section>
+
+    <div class="dict-modal-backdrop" id="all-templates-modal-backdrop" aria-hidden="true"></div>
+    <section
+      class="all-templates-modal"
+      id="all-templates-modal"
+      role="dialog"
+      aria-modal="true"
+      aria-label="All Templates"
+      aria-hidden="true"
+    >
+      <div class="dict-modal-header">
+        <span class="settings-drawer-title">All Templates</span>
+        <button type="button" class="settings-close-btn" id="btn-close-all-templates" title="Close" aria-label="Close">
+          <i data-lucide="x" class="lucide-sm"></i>
+        </button>
+      </div>
+      <div class="all-templates-modal-body">
+        <div class="recent-templates-grid" id="all-templates-grid"></div>
+      </div>
+      <div class="dict-modal-footer">
+        <button type="button" class="settings-footer-btn is-primary" id="btn-done-all-templates">Done</button>
+      </div>
+    </section>
+
+    <div class="dict-modal-backdrop" id="all-recents-modal-backdrop" aria-hidden="true"></div>
+    <section
+      class="all-templates-modal"
+      id="all-recents-modal"
+      role="dialog"
+      aria-modal="true"
+      aria-label="All Recent Documents"
+      aria-hidden="true"
+    >
+      <div class="dict-modal-header">
+        <span class="settings-drawer-title">Recent Documents</span>
+        <button type="button" class="settings-close-btn" id="btn-close-all-recents" title="Close" aria-label="Close">
+          <i data-lucide="x" class="lucide-sm"></i>
+        </button>
+      </div>
+      <div class="all-templates-modal-body">
+        <div class="recent-docs-list" id="all-recents-list" role="list"></div>
+      </div>
+      <div class="dict-modal-footer">
+        <button type="button" class="settings-footer-btn is-primary" id="btn-done-all-recents">Done</button>
+      </div>
+    </section>
+
+    <div class="dict-modal-backdrop" id="whats-new-modal-backdrop" aria-hidden="true"></div>
+    <section
+      class="whats-new-modal"
+      id="whats-new-modal"
+      role="dialog"
+      aria-modal="true"
+      aria-label="What's New in WordFlow"
+      aria-hidden="true"
+    >
+      <div class="dict-modal-header">
+        <span class="settings-drawer-title">What's New in WordFlow <span class="whats-new-badge" id="whats-new-version-badge">v0.2.0</span></span>
+        <button type="button" class="settings-close-btn" id="btn-close-whats-new" title="Close" aria-label="Close">
+          <i data-lucide="x" class="lucide-sm"></i>
+        </button>
+      </div>
+      <div class="whats-new-modal-body">
+        <p class="whats-new-intro">Here's a summary of what's been added since v0.1.0:</p>
+        <ul class="whats-new-list">
+          <li><strong>Auto-Save &amp; Status Indicator:</strong> Turn on automatic saving (30s, 1m, or 5m) in Settings and see live Auto-Save status in the bottom bar.</li>
+          <li><strong>Expanded Document Menu:</strong> Open recent files, start from a template, duplicate, rename, revert to saved, reveal in Finder, or save any document as a reusable template.</li>
+          <li><strong>Start Screen Upgrades:</strong> Pick a document mode directly from the <em>New Document</em> split button, browse 4 templates or 5 recent documents at a glance, and click <em>More…</em> to view everything.</li>
+          <li><strong>Writing &amp; Proofing Controls:</strong> Toggle Spellcheck and Grammar checks independently, and review or remove words in your Custom Dictionary.</li>
+          <li><strong>Document Defaults &amp; Workspace:</strong> Set default line spacing, page margins, measurement units, and System (Auto) theme, or reset toolbars and the Inspector layout in one click.</li>
+          <li><strong>Native Print &amp; PDF:</strong> Fixed Print / Export as PDF on macOS to open the system print &amp; PDF dialog directly.</li>
+        </ul>
+      </div>
+      <div class="dict-modal-footer">
+        <button type="button" class="settings-footer-btn is-primary" id="btn-done-whats-new">Got It</button>
       </div>
     </section>
 

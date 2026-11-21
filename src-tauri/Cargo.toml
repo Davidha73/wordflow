@@ -1,6 +1,6 @@
 [package]
 name = "wordflow"
-version = "0.1.0"
+version = "0.2.0"
 description = "WordFlow - Standalone Desktop Word Processor"
 authors = ["WordFlow"]
 edition = "2021"

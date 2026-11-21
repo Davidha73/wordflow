@@ -1,14 +1,12 @@
-## [2026-11-21 / v0.1.0]
+## [2026-11-21 / v0.2.0]
 - **Status:**
-  - Added **Default Zoom** to Settings, Word-style preview dropdowns + **Style Editor** modal (`styleEditorModal.js`), Markdown line style detection (`inspectorPane.js`), free toolbar dragging (`dockableToolbars.js`), and unified button/close styles (`editor.css`).
-  - Added macOS `NSSpellChecker`, `.grammar-underline-layer` (`grammarHighlights.js`, hidden outside `.docx`), and synced **Add to Dictionary** (`custom_dictionary.txt` in `spellcheck.rs` + `grammar.rs` + `contextMenu.js`) so red underlines clear immediately.
-  - Added **Export as .pdf** in Convert menu (`index.html`, `main.js`) and **Start from a Template** cards (`Blank Document`, `Letter`, `Report`, `Meeting Notes`) with miniature page previews (`recentDocsView.js`, `fileService.js`, `editor.css`).
-  - Configured Git remote `git@github.com:Davidha73/wordflow.git` and added `/push` workspace skill (`.agents/skills/push/SKILL.md`).
+  - Bumped version to `0.2.0` (`package.json`, `Cargo.toml`, `tauri.conf.json`, `index.html`) and added **What's New** modal (`#whats-new-modal`, `lastSeenVersion` in `settingsStore.js`, auto-shown once per version and accessible via Settings → **View Updates…**).
+  - Expanded **Settings** drawer into grouped sections (*Startup & Files*, *Document Defaults*, *Writing & Proofing*, *Appearance & Workspace*, *Maintenance*) with Auto-Save (`Off`/`30s`/`1m`/`5m`) + status bar badge (`statusBar.setAutoSaveStatus`), Default Line Spacing/Margins/Units, Spellcheck & Grammar toggles, Custom Dictionary modal (`dictionaryModal.js` + `spellcheck.rs`), System theme, and Reset Layout.
+  - Added native `print_document` Tauri command (`src-tauri/src/lib.rs`) wired to `fileService.printDocument()` for macOS Print/PDF dialog.
+  - Expanded the title bar pill menu (`#doc-pill-menu`) with **New from Template**, **Open Recent**, **Save as Template…**, **Duplicate**, **Rename…**, **Revert to Saved**, and **Show in Finder**, plus Rename/Save-Template modals, split-button mode selector on Start Screen **New Document**, and 4-template / 5-recent Start Screen caps with **More…** modals (`MAX_RECENT_DOCUMENTS = 25`).
 - **Files Changed:**
   - `src/index.html`, `src/main.js`, `src/styles/editor.css`
-  - `src/modules/settingsStore.js`, `src/modules/settingsDrawer.js`, `src/modules/statusBar.js`, `src/modules/styleEditorModal.js`
-  - `src/modules/editor.js`, `src/modules/inspectorPane.js`, `src/modules/dockableToolbars.js`, `src/modules/grammarHighlights.js`
-  - `src/modules/contextMenu.js`, `src/modules/fileService.js`, `src/modules/recentDocsView.js`
-  - `src-tauri/Cargo.toml`, `src-tauri/src/spellcheck.rs`, `src-tauri/src/grammar.rs`
-  - `.gitignore`, `.agents/skills/push/SKILL.md`
-- **Next Objectives:** Run `/push` when ready to push the latest changes, or continue with Open With / Toolbar polish / Release build.
+  - `src/modules/settingsStore.js`, `src/modules/settingsDrawer.js`, `src/modules/dictionaryModal.js`
+  - `src/modules/statusBar.js`, `src/modules/editor.js`, `src/modules/inspectorPane.js`, `src/modules/fileService.js`, `src/modules/recentDocsView.js`
+  - `src-tauri/src/spellcheck.rs`, `src-tauri/src/lib.rs`
+- **Next Objectives:** Run `npm run tauri dev` or build to verify Rust + frontend changes, then `/push` when ready.

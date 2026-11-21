@@ -1,20 +1,28 @@
 import { BaseDirectory, exists, mkdir, readTextFile, writeTextFile } from '@tauri-apps/plugin-fs';
 
 const SETTINGS_FILE = 'settings.json';
-const MAX_RECENT_DOCUMENTS = 10;
+const MAX_RECENT_DOCUMENTS = 25;
 const DEFAULTS = {
   startIn: 'document',
   defaultFont: 'Georgia',
   defaultFontSize: '12pt',
+  defaultLineSpacing: '1.15',
+  defaultPageMargins: '1',
   defaultMode: 'docx',
   pageSize: 'A4',
   pageOrientation: 'portrait',
+  measurementUnit: 'mm',
   tabsEnabled: true,
   theme: 'light',
+  spellcheckEnabled: true,
+  grammarEnabled: true,
+  autoSaveInterval: 0,
   defaultZoom: 100,
   zoom: 100,
   customStyles: [],
+  customTemplates: [],
   recentDocuments: [],
+  lastSeenVersion: '',
   window: {
     width: 1120,
     height: 760,
@@ -40,6 +48,16 @@ function readLocalCustomStylesFallback() {
   }
 }
 
+function readLocalCustomTemplatesFallback() {
+  try {
+    const raw = localStorage.getItem('wordflow-custom-templates');
+    const parsed = raw ? JSON.parse(raw) : [];
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
+  }
+}
+
 function readLocalRecentFallback() {
   try {
     const raw = localStorage.getItem('wordflow-recent-docs');
@@ -55,19 +73,39 @@ function readLocalFallback() {
     startIn: localStorage.getItem('wordflow-start-in') || DEFAULTS.startIn,
     defaultFont: localStorage.getItem('wordflow-default-font') || DEFAULTS.defaultFont,
     defaultFontSize: localStorage.getItem('wordflow-default-size') || DEFAULTS.defaultFontSize,
+    defaultLineSpacing:
+      localStorage.getItem('wordflow-default-line-spacing') || DEFAULTS.defaultLineSpacing,
+    defaultPageMargins:
+      localStorage.getItem('wordflow-default-page-margins') || DEFAULTS.defaultPageMargins,
     defaultMode: localStorage.getItem('wordflow-default-mode') || DEFAULTS.defaultMode,
     pageSize: localStorage.getItem('wordflow-page-size') || DEFAULTS.pageSize,
     pageOrientation:
       localStorage.getItem('wordflow-page-orientation') || DEFAULTS.pageOrientation,
+    measurementUnit:
+      localStorage.getItem('wordflow-measurement-unit') || DEFAULTS.measurementUnit,
     tabsEnabled:
       localStorage.getItem('wordflow-tabs-enabled') !== null
         ? localStorage.getItem('wordflow-tabs-enabled') === 'true'
         : DEFAULTS.tabsEnabled,
     theme: localStorage.getItem('wordflow-ui-theme') || DEFAULTS.theme,
+    spellcheckEnabled:
+      localStorage.getItem('wordflow-spellcheck-enabled') !== null
+        ? localStorage.getItem('wordflow-spellcheck-enabled') === 'true'
+        : DEFAULTS.spellcheckEnabled,
+    grammarEnabled:
+      localStorage.getItem('wordflow-grammar-enabled') !== null
+        ? localStorage.getItem('wordflow-grammar-enabled') === 'true'
+        : DEFAULTS.grammarEnabled,
+    autoSaveInterval:
+      localStorage.getItem('wordflow-autosave-interval') !== null
+        ? Number(localStorage.getItem('wordflow-autosave-interval')) || 0
+        : DEFAULTS.autoSaveInterval,
     defaultZoom: Number(localStorage.getItem('wordflow-default-zoom')) || DEFAULTS.defaultZoom,
     zoom: Number(localStorage.getItem('wordflow-doc-zoom')) || DEFAULTS.zoom,
     customStyles: readLocalCustomStylesFallback(),
+    customTemplates: readLocalCustomTemplatesFallback(),
     recentDocuments: readLocalRecentFallback(),
+    lastSeenVersion: localStorage.getItem('wordflow-last-seen-version') || '',
   };
 }
 
@@ -81,6 +119,12 @@ function writeLocalFallback(settings) {
   if (settings.defaultFontSize) {
     localStorage.setItem('wordflow-default-size', settings.defaultFontSize);
   }
+  if (settings.defaultLineSpacing) {
+    localStorage.setItem('wordflow-default-line-spacing', String(settings.defaultLineSpacing));
+  }
+  if (settings.defaultPageMargins) {
+    localStorage.setItem('wordflow-default-page-margins', String(settings.defaultPageMargins));
+  }
   if (settings.defaultMode) {
     localStorage.setItem('wordflow-default-mode', settings.defaultMode);
   }
@@ -90,11 +134,23 @@ function writeLocalFallback(settings) {
   if (settings.pageOrientation) {
     localStorage.setItem('wordflow-page-orientation', settings.pageOrientation);
   }
+  if (settings.measurementUnit) {
+    localStorage.setItem('wordflow-measurement-unit', settings.measurementUnit);
+  }
   if (typeof settings.tabsEnabled === 'boolean') {
     localStorage.setItem('wordflow-tabs-enabled', String(settings.tabsEnabled));
   }
   if (settings.theme) {
     localStorage.setItem('wordflow-ui-theme', settings.theme);
+  }
+  if (typeof settings.spellcheckEnabled === 'boolean') {
+    localStorage.setItem('wordflow-spellcheck-enabled', String(settings.spellcheckEnabled));
+  }
+  if (typeof settings.grammarEnabled === 'boolean') {
+    localStorage.setItem('wordflow-grammar-enabled', String(settings.grammarEnabled));
+  }
+  if (typeof settings.autoSaveInterval === 'number' && Number.isFinite(settings.autoSaveInterval)) {
+    localStorage.setItem('wordflow-autosave-interval', String(settings.autoSaveInterval));
   }
   if (typeof settings.defaultZoom === 'number' && Number.isFinite(settings.defaultZoom)) {
     localStorage.setItem('wordflow-default-zoom', String(settings.defaultZoom));
@@ -106,12 +162,22 @@ function writeLocalFallback(settings) {
       // Ignore storage quota errors.
     }
   }
+  if (Array.isArray(settings.customTemplates)) {
+    try {
+      localStorage.setItem('wordflow-custom-templates', JSON.stringify(settings.customTemplates));
+    } catch {
+      // Ignore storage quota errors.
+    }
+  }
   if (Array.isArray(settings.recentDocuments)) {
     try {
       localStorage.setItem('wordflow-recent-docs', JSON.stringify(settings.recentDocuments));
     } catch {
       // Ignore storage quota errors.
     }
+  }
+  if (typeof settings.lastSeenVersion === 'string') {
+    localStorage.setItem('wordflow-last-seen-version', settings.lastSeenVersion);
   }
 }
 
@@ -208,4 +274,34 @@ export async function removeRecentDocument(filePath) {
 export async function clearRecentDocuments() {
   await saveSettings({ recentDocuments: [] });
   return [];
+}
+
+export function getCustomTemplates() {
+  return Array.isArray(cachedSettings.customTemplates) ? [...cachedSettings.customTemplates] : [];
+}
+
+export async function addCustomTemplate({ title, desc = '', mode = 'docx', content = '', html = '' }) {
+  const cleanTitle = String(title || '').trim();
+  if (!cleanTitle) return getCustomTemplates();
+  const entry = {
+    id: `tpl-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+    title: cleanTitle,
+    desc: String(desc || '').trim() || 'Saved template',
+    icon: 'file-text',
+    mode: mode || 'docx',
+    content: String(content || ''),
+    html: String(html || ''),
+    isCustom: true,
+    createdAt: new Date().toISOString(),
+  };
+  const next = [entry, ...getCustomTemplates().filter((t) => t?.title !== cleanTitle)];
+  await saveSettings({ customTemplates: next });
+  return next;
+}
+
+export async function removeCustomTemplate(id) {
+  if (!id) return getCustomTemplates();
+  const next = getCustomTemplates().filter((t) => t?.id !== id);
+  await saveSettings({ customTemplates: next });
+  return next;
 }

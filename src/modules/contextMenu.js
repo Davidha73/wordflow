@@ -16,6 +16,7 @@ export function createContextMenu({
   onApplyFontSize,
   onApplyTextColor,
   onApplyHighlightColor,
+  onToggleBottomBorder,
   onFindReplace,
   onRichMutate,
   onSourceMutate,
@@ -29,6 +30,8 @@ export function createContextMenu({
   document.body.appendChild(menuEl);
 
   let isOpen = false;
+  let preRightClickRange = null;
+  let preRightClickSourceSel = null;
 
   function close() {
     if (!isOpen) return;
@@ -361,6 +364,15 @@ export function createContextMenu({
       onSelect: () => {
         restoreRichRange(savedRange);
         execFormatCommand('justifyRight');
+      },
+    });
+    addRowSeparator(fmtRow);
+    addIconButton(fmtRow, {
+      icon: 'minus',
+      title: 'Toggle Bottom Border Separator',
+      onSelect: () => {
+        restoreRichRange(savedRange);
+        onToggleBottomBorder?.();
       },
     });
 
@@ -751,12 +763,35 @@ export function createContextMenu({
     });
   }
 
+  function restorePreRightClickSelection(isSource) {
+    if (isSource && sourceEl) {
+      if (preRightClickSourceSel) {
+        sourceEl.setSelectionRange(
+          preRightClickSourceSel.start,
+          preRightClickSourceSel.end,
+          preRightClickSourceSel.direction
+        );
+      }
+      return;
+    }
+    if (!wordEl) return;
+    const sel = window.getSelection();
+    if (!sel) return;
+    if (preRightClickRange) {
+      sel.removeAllRanges();
+      sel.addRange(preRightClickRange.cloneRange());
+    } else if (sel.rangeCount > 0 && wordEl.contains(sel.anchorNode)) {
+      sel.removeAllRanges();
+    }
+  }
+
   function openMenu(event, isSource) {
     if (event.shiftKey) {
       close();
       return;
     }
     event.preventDefault();
+    restorePreRightClickSelection(isSource);
     menuEl.innerHTML = '';
     if (isSource) {
       buildSourceMenu();
@@ -768,8 +803,36 @@ export function createContextMenu({
     initIcons(menuEl);
     isOpen = true;
     positionMenu(event.clientX, event.clientY);
+    requestAnimationFrame(() => restorePreRightClickSelection(isSource));
   }
 
+  function capturePreRightClickSelection(event) {
+    if (event.shiftKey) return;
+    if (event.button === 2 || (event.button === 0 && event.ctrlKey)) {
+      event.preventDefault();
+      if (getMode() === 'docx' && wordEl) {
+        const sel = window.getSelection();
+        preRightClickRange =
+          sel && sel.rangeCount > 0 && wordEl.contains(sel.anchorNode)
+            ? sel.getRangeAt(0).cloneRange()
+            : null;
+        preRightClickSourceSel = null;
+      } else if (sourceEl) {
+        preRightClickSourceSel = {
+          start: sourceEl.selectionStart ?? 0,
+          end: sourceEl.selectionEnd ?? 0,
+          direction: sourceEl.selectionDirection || 'none',
+        };
+        preRightClickRange = null;
+      }
+    } else {
+      preRightClickRange = null;
+      preRightClickSourceSel = null;
+    }
+  }
+
+  wordEl?.addEventListener('mousedown', capturePreRightClickSelection, true);
+  sourceEl?.addEventListener('mousedown', capturePreRightClickSelection, true);
   wordEl?.addEventListener('contextmenu', (event) => openMenu(event, false));
   sourceEl?.addEventListener('contextmenu', (event) => openMenu(event, true));
 
