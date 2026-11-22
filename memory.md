@@ -1,12 +1,9 @@
-## [2026-11-21 / v0.2.0]
+## [2026-11-22 / v0.2.0]
+
 - **Status:**
-  - Bumped version to `0.2.0` (`package.json`, `Cargo.toml`, `tauri.conf.json`, `index.html`) and added **What's New** modal (`#whats-new-modal`, `lastSeenVersion` in `settingsStore.js`, auto-shown once per version and accessible via Settings → **View Updates…**).
-  - Expanded **Settings** drawer into grouped sections (*Startup & Files*, *Document Defaults*, *Writing & Proofing*, *Appearance & Workspace*, *Maintenance*) with Auto-Save (`Off`/`30s`/`1m`/`5m`) + status bar badge (`statusBar.setAutoSaveStatus`), Default Line Spacing/Margins/Units, Spellcheck & Grammar toggles, Custom Dictionary modal (`dictionaryModal.js` + `spellcheck.rs`), System theme, and Reset Layout.
-  - Added native `print_document` Tauri command (`src-tauri/src/lib.rs`) wired to `fileService.printDocument()` for macOS Print/PDF dialog.
-  - Expanded the title bar pill menu (`#doc-pill-menu`) with **New from Template**, **Open Recent**, **Save as Template…**, **Duplicate**, **Rename…**, **Revert to Saved**, and **Show in Finder**, plus Rename/Save-Template modals, split-button mode selector on Start Screen **New Document**, and 4-template / 5-recent Start Screen caps with **More…** modals (`MAX_RECENT_DOCUMENTS = 25`).
-- **Files Changed:**
-  - `src/index.html`, `src/main.js`, `src/styles/editor.css`
-  - `src/modules/settingsStore.js`, `src/modules/settingsDrawer.js`, `src/modules/dictionaryModal.js`
-  - `src/modules/statusBar.js`, `src/modules/editor.js`, `src/modules/inspectorPane.js`, `src/modules/fileService.js`, `src/modules/recentDocsView.js`
-  - `src-tauri/src/spellcheck.rs`, `src-tauri/src/lib.rs`
-- **Next Objectives:** Run `npm run tauri dev` or build to verify Rust + frontend changes, then `/push` when ready.
+  - Integrated with **FlowDash** (`/Users/davidharries/Projects/FlowDash`): removed WordFlow's duplicate Start Page, wired `return_to_flowdash` on closing the last tab/document, added `#btn-switch-flowdash` (`square-arrow-down-left-enter`) in `.brand`, and handled `new-document` / `new-template` / `open-file` handoffs.
+  - Shared `FlowDash/src/styles/theme.css` via `@import` + `vite.config.js` `fs.allow`.
+  - Moved `custom_dictionary.txt` in `spellcheck.rs` to shared `FlowSuite/custom_dictionary.txt` (used by both spellcheck and `harper-core` grammar checker).
+  - Auto-mirrored `recentDocuments` and `customTemplates` to `FlowSuite/` in `write_settings_file`.
+- **Next Objectives:**
+  - Verify full FlowDash ↔ WordFlow ↔ BoardFlow flows, then `/push` when ready.

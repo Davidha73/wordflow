@@ -2,9 +2,7 @@ import { invoke } from '@tauri-apps/api/core';
 import { createIconPlaceholder, initIcons } from './icons.js';
 import { clearGrammarHighlights, updateGrammarHighlights } from './grammarHighlights.js';
 import { applyMarkdownFormat } from './markdownToolbar.js';
-
-const STORAGE_KEY = 'wordflow.inspectorOpen';
-const LAYOUT_STORAGE_KEY = 'wordflow.inspectorLayout';
+import { getSettingsSnapshot, saveSettings } from './settingsStore.js';
 
 const MODE_TIPS = {
   docx: {
@@ -131,44 +129,27 @@ const TXT_TIPS = {
 };
 
 function readStoredOpenState() {
-  try {
-    return localStorage.getItem(STORAGE_KEY) === 'true';
-  } catch {
-    return false;
-  }
+  return Boolean(getSettingsSnapshot().inspectorOpen);
 }
 
 function writeStoredOpenState(isOpen) {
-  try {
-    localStorage.setItem(STORAGE_KEY, isOpen ? 'true' : 'false');
-  } catch {
-    // Ignore storage errors in restricted environments.
-  }
+  saveSettings({ inspectorOpen: Boolean(isOpen) });
 }
 
 function readStoredLayout() {
   const defaults = { mode: 'docked', dock: 'right', x: null, y: 112 };
-  try {
-    const raw = localStorage.getItem(LAYOUT_STORAGE_KEY);
-    if (!raw) return defaults;
-    const parsed = JSON.parse(raw);
-    return {
-      mode: parsed.mode === 'floating' ? 'floating' : 'docked',
-      dock: parsed.dock === 'left' ? 'left' : 'right',
-      x: typeof parsed.x === 'number' ? parsed.x : null,
-      y: typeof parsed.y === 'number' ? parsed.y : 112,
-    };
-  } catch {
-    return defaults;
-  }
+  const parsed = getSettingsSnapshot().inspectorLayout;
+  if (!parsed || typeof parsed !== 'object') return defaults;
+  return {
+    mode: parsed.mode === 'floating' ? 'floating' : 'docked',
+    dock: parsed.dock === 'left' ? 'left' : 'right',
+    x: typeof parsed.x === 'number' ? parsed.x : null,
+    y: typeof parsed.y === 'number' ? parsed.y : 112,
+  };
 }
 
 function writeStoredLayout(layout) {
-  try {
-    localStorage.setItem(LAYOUT_STORAGE_KEY, JSON.stringify(layout));
-  } catch {
-    // Ignore storage errors in restricted environments.
-  }
+  saveSettings({ inspectorLayout: layout });
 }
 
 function countWords(text) {
@@ -1450,11 +1431,7 @@ export function createInspectorPane({
     },
     resetLayout: () => {
       layout = { mode: 'docked', dock: 'right', x: null, y: 112 };
-      try {
-        localStorage.removeItem(LAYOUT_STORAGE_KEY);
-      } catch {
-        // Ignore storage errors
-      }
+      writeStoredLayout(layout);
       applyLayoutState();
     },
     ignoreGrammarIssue: (issue) => {

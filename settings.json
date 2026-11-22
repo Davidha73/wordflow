@@ -1,0 +1,93 @@
+{
+  "startIn": "start-page",
+  "defaultFont": "Arial",
+  "defaultFontSize": "12pt",
+  "defaultLineSpacing": "1.15",
+  "defaultPageMargins": "1",
+  "defaultMode": "docx",
+  "pageSize": "A4",
+  "pageOrientation": "portrait",
+  "measurementUnit": "mm",
+  "tabsEnabled": false,
+  "theme": "system",
+  "spellcheckEnabled": true,
+  "grammarEnabled": true,
+  "autoSaveInterval": 300,
+  "defaultZoom": 100,
+  "zoom": 100,
+  "customStyles": [
+    {
+      "id": "style-1795280242239",
+      "name": "WordFlow",
+      "block": "H1",
+      "fontFamily": "Helvetica Neue",
+      "fontSize": "24pt",
+      "color": "#00a3d7",
+      "bold": true,
+      "italic": false,
+      "underline": true,
+      "strikethrough": false,
+      "align": "left"
+    }
+  ],
+  "customTemplates": [
+    {
+      "id": "tpl-1795287346283-cq2z8",
+      "title": "Title",
+      "desc": "Title and Text",
+      "icon": "file-text",
+      "mode": "docx",
+      "content": "",
+      "html": "<h1 style=\"text-align: center;\">Title</h1><div><br></div><div><br></div><div><br></div><div><b>Text</b></div><div><br></div><div><i>Text</i></div>",
+      "isCustom": true,
+      "createdAt": "2026-11-21T18:55:46.283Z"
+    },
+    {
+      "id": "tpl-1795287095335-o89bj",
+      "title": "Dave Template",
+      "desc": "Saved template",
+      "icon": "file-text",
+      "mode": "docx",
+      "content": "",
+      "html": "<h1 data-custom-style=\"style-1795280242239\"><span style=\"font-size: 24pt;\"><font color=\"#00a3d7\"><u>Heading</u></font></span></h1><div><br></div><div>Body</div><div><br></div><div><i>Signature</i></div>",
+      "isCustom": true,
+      "createdAt": "2026-11-21T18:51:35.335Z"
+    }
+  ],
+  "recentDocuments": [
+    {
+      "path": "/Users/davidharries/Library/CloudStorage/GoogleDrive-davidha73@googlemail.com/My Drive/Office Junior.txt",
+      "name": "Office Junior.txt",
+      "mode": "txt",
+      "size": 3096,
+      "modifiedAt": "2026-09-16T11:35:06.000Z",
+      "openedAt": "2026-11-22T15:28:41.278Z"
+    },
+    {
+      "path": "/Users/davidharries/Library/CloudStorage/GoogleDrive-davidha73@googlemail.com/My Drive/Cycle7.html",
+      "name": "Cycle7.html",
+      "mode": "html",
+      "size": 37059,
+      "modifiedAt": "2026-03-20T09:29:21.000Z",
+      "openedAt": "2026-11-21T18:58:57.244Z"
+    }
+  ],
+  "lastSeenVersion": "0.2.0",
+  "toolbarLayout": {},
+  "toolbarHidden": [],
+  "inspectorOpen": true,
+  "inspectorLayout": {
+    "mode": "floating",
+    "dock": "right",
+    "x": 1165,
+    "y": 207.46484375
+  },
+  "recoveryDraft": null,
+  "window": {
+    "width": 2898,
+    "height": 2074,
+    "x": 920,
+    "y": 60,
+    "maximized": false
+  }
+}

@@ -7,10 +7,18 @@ use tauri::Manager;
 static LEARNED_WORDS: OnceLock<RwLock<Option<HashSet<String>>>> = OnceLock::new();
 
 fn dictionary_path(app: &tauri::AppHandle) -> Option<PathBuf> {
-    app.path()
-        .app_config_dir()
-        .ok()
-        .map(|dir| dir.join("custom_dictionary.txt"))
+    let data_dir = app.path().app_data_dir().ok()?;
+    let suite_dir = data_dir.parent().unwrap_or(&data_dir).join("FlowSuite");
+    let shared_path = suite_dir.join("custom_dictionary.txt");
+    if !shared_path.exists() {
+        if let Some(legacy_path) = app.path().app_config_dir().ok().map(|d| d.join("custom_dictionary.txt")) {
+            if legacy_path.exists() {
+                let _ = fs::create_dir_all(&suite_dir);
+                let _ = fs::copy(&legacy_path, &shared_path);
+            }
+        }
+    }
+    Some(shared_path)
 }
 
 fn ensure_loaded(app: &tauri::AppHandle) -> &'static RwLock<Option<HashSet<String>>> {

@@ -1,10 +1,12 @@
 import { invoke } from '@tauri-apps/api/core';
+import { getCurrentWindow } from '@tauri-apps/api/window';
 import { open, save, confirm, message } from '@tauri-apps/plugin-dialog';
 import { exists, readFile, readTextFile, rename, stat, writeFile, writeTextFile } from '@tauri-apps/plugin-fs';
 import mammoth from 'mammoth';
 import { htmlToDocxBytes } from './docxExporter.js';
+import { extractDocxLayout } from './docxLayoutReader.js';
 import { escapeHtml } from './formatters.js';
-import { addRecentDocument, removeRecentDocument } from './settingsStore.js';
+import { addRecentDocument, getSettingsSnapshot, removeRecentDocument, saveSettings } from './settingsStore.js';
 
 const SUPPORTED_EXTENSIONS = new Set(['docx', 'md', 'txt', 'html', 'htm']);
 
@@ -53,8 +55,6 @@ function replaceExtension(fileName, targetExt) {
   return `${fileName}.${targetExt}`;
 }
 
-const DRAFT_STORAGE_KEY = 'wordflow.recoveryDraft.v1';
-
 export function createFileService({ editor, onStateChange, initialHasOpenDocument = true }) {
   let currentPath = null;
   let isDirty = false;
@@ -64,27 +64,22 @@ export function createFileService({ editor, onStateChange, initialHasOpenDocumen
 
   function saveRecoveryDraftNow() {
     if (!hasOpenDocument || !isDirty) return;
-    try {
-      const mode = editor.getMode();
-      const content =
-        mode === 'docx'
-          ? editor.getHtml()
-          : mode === 'md'
-            ? editor.getMarkdown()
-            : editor.getPlainText();
-      if (!content || !content.trim()) return;
-      localStorage.setItem(
-        DRAFT_STORAGE_KEY,
-        JSON.stringify({
-          mode,
-          content,
-          filePath: currentPath,
-          savedAt: Date.now(),
-        })
-      );
-    } catch {
-      // Ignore storage quota errors
-    }
+    const mode = editor.getMode();
+    const content =
+      mode === 'docx'
+        ? editor.getHtml()
+        : mode === 'md'
+          ? editor.getMarkdown()
+          : editor.getPlainText();
+    if (!content || !content.trim()) return;
+    saveSettings({
+      recoveryDraft: {
+        mode,
+        content,
+        filePath: currentPath,
+        savedAt: Date.now(),
+      },
+    });
   }
 
   function clearRecoveryDraft() {
@@ -92,22 +87,14 @@ export function createFileService({ editor, onStateChange, initialHasOpenDocumen
       window.clearTimeout(draftTimer);
       draftTimer = 0;
     }
-    try {
-      localStorage.removeItem(DRAFT_STORAGE_KEY);
-    } catch {
-      // Ignore storage errors
+    if (getSettingsSnapshot().recoveryDraft) {
+      saveSettings({ recoveryDraft: null });
     }
   }
 
   function getRecoveryDraft() {
-    try {
-      const raw = localStorage.getItem(DRAFT_STORAGE_KEY);
-      if (!raw) return null;
-      const parsed = JSON.parse(raw);
-      return parsed && parsed.content ? parsed : null;
-    } catch {
-      return null;
-    }
+    const draft = getSettingsSnapshot().recoveryDraft;
+    return draft && draft.content ? draft : null;
   }
 
   async function restoreRecoveryDraft() {
@@ -332,6 +319,17 @@ export function createFileService({ editor, onStateChange, initialHasOpenDocumen
     notify();
   }
 
+  async function returnToFlowDashAndQuit() {
+    isDirty = false;
+    try {
+      await invoke('return_to_flowdash');
+      await getCurrentWindow().destroy();
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
   async function closeTab(tab) {
     if (!tab || !tabManager) return;
     if (tab.isDirty) {
@@ -349,6 +347,7 @@ export function createFileService({ editor, onStateChange, initialHasOpenDocumen
       isDirty = nextTab.isDirty;
       notify();
     } else {
+      if (await returnToFlowDashAndQuit()) return;
       hasOpenDocument = false;
       currentPath = null;
       isDirty = false;
@@ -366,6 +365,9 @@ export function createFileService({ editor, onStateChange, initialHasOpenDocumen
         return;
       }
     }
+    const ok = await confirmDiscardIfDirty();
+    if (!ok) return;
+    if (await returnToFlowDashAndQuit()) return;
     return resetDocument(false);
   }
 
@@ -412,7 +414,9 @@ export function createFileService({ editor, onStateChange, initialHasOpenDocumen
           bytes.byteOffset + bytes.byteLength
         );
         const result = await mammoth.convertToHtml({ arrayBuffer });
+        const layout = await extractDocxLayout(arrayBuffer);
         editor.loadDocumentContent('docx', result.value);
+        editor.applyLoadedLayout?.(layout);
       } else if (ext === 'md') {
         const text = await readTextFile(filePath);
         editor.loadDocumentContent('md', text);

@@ -18,6 +18,15 @@
             <button
               type="button"
               class="btn-more-dots"
+              id="btn-switch-flowdash"
+              title="Switch to FlowDash"
+              aria-label="Switch to FlowDash"
+            >
+              <i data-lucide="square-arrow-down-left-enter" class="lucide-sm"></i>
+            </button>
+            <button
+              type="button"
+              class="btn-more-dots"
               id="btn-settings"
               title="Settings"
               aria-label="Open Settings"
@@ -244,6 +253,12 @@
             </button>
             <button type="button" class="fmt-btn" id="btn-format-painter" title="Format Painter (Copy &amp; Apply Formatting)" aria-label="Format Painter" aria-pressed="false">
               <i data-lucide="paintbrush" class="lucide-sm"></i>
+            </button>
+            <button type="button" class="fmt-btn" data-rich-only="true" data-cmd="removeFormat" title="Clear Formatting" aria-label="Clear Formatting">
+              <i data-lucide="remove-formatting" class="lucide-sm"></i>
+            </button>
+            <button type="button" class="fmt-btn" id="btn-send-boardflow" title="Send Selection to BoardFlow" aria-label="Send to BoardFlow">
+              <i data-lucide="send" class="lucide-sm"></i>
             </button>
           </div>
 
@@ -479,19 +494,10 @@
 
           <span class="toolbar-divider" aria-hidden="true"></span>
 
-          <div class="toolbar-group" data-rich-only="true" data-toolbar-id="clear" data-title="Clear">
-            <button type="button" class="fmt-btn" data-cmd="removeFormat" title="Clear Formatting" aria-label="Clear Formatting">
-              <i data-lucide="remove-formatting" class="lucide-sm"></i>
-            </button>
-          </div>
-
-          <span class="toolbar-divider" aria-hidden="true"></span>
-
           <div class="toolbar-group" data-rich-only="true" data-toolbar-id="insert" data-title="Insert">
             <div class="table-insert-wrap" id="table-insert-wrap">
-              <button type="button" class="fmt-btn" id="btn-insert-table" title="Insert Table">
+              <button type="button" class="fmt-btn" id="btn-insert-table" title="Insert Table" aria-label="Insert Table">
                 <i data-lucide="table" class="lucide-sm"></i>
-                <span>Table</span>
               </button>
               <div class="table-popover" id="table-insert-popover" role="dialog" aria-label="Insert table">
                 <div class="table-popover-row">
@@ -506,9 +512,8 @@
               </div>
             </div>
             <div class="shapes-insert-wrap" id="shapes-insert-wrap">
-              <button type="button" class="fmt-btn" id="btn-insert-shape" title="Insert Shape">
+              <button type="button" class="fmt-btn" id="btn-insert-shape" title="Insert Shape" aria-label="Insert Shape">
                 <i data-lucide="shapes" class="lucide-sm"></i>
-                <span>Shapes</span>
                 <i data-lucide="chevron-down" class="lucide-xs"></i>
               </button>
               <div class="shapes-popover" id="shapes-popover" role="menu" aria-label="Insert shape">
@@ -575,19 +580,8 @@
                 </button>
               </div>
             </div>
-            <button
-              type="button"
-              class="fmt-btn"
-              id="btn-shape-marquee"
-              title="Select Shapes (Right-swipe: Inside • Left-swipe: Crossing • or Alt+Drag)"
-              aria-pressed="false"
-            >
-              <i data-lucide="box-select" class="lucide-sm"></i>
-              <span>Select</span>
-            </button>
-            <button type="button" class="fmt-btn" id="btn-insert-image" title="Insert Image">
+            <button type="button" class="fmt-btn" id="btn-insert-image" title="Insert Image" aria-label="Insert Image">
               <i data-lucide="image" class="lucide-sm"></i>
-              <span>Image</span>
             </button>
             <input type="file" id="image-file-input" accept="image/*" hidden />
             <div class="link-insert-wrap" id="link-insert-wrap">
@@ -596,11 +590,11 @@
                 class="fmt-btn"
                 id="btn-insert-link"
                 title="Insert / Edit Hyperlink (Ctrl+K)"
+                aria-label="Insert or Edit Hyperlink"
                 aria-haspopup="dialog"
                 aria-expanded="false"
               >
                 <i data-lucide="link" class="lucide-sm"></i>
-                <span>Link</span>
               </button>
               <div class="link-popover" id="link-popover" role="dialog" aria-label="Insert hyperlink">
                 <label class="link-popover-field">
@@ -624,11 +618,11 @@
                 class="fmt-btn"
                 id="btn-page-menu"
                 title="Page &amp; Break Tools"
+                aria-label="Page and Break Tools"
                 aria-haspopup="menu"
                 aria-expanded="false"
               >
                 <i data-lucide="file-text" class="lucide-sm"></i>
-                <span>Pages</span>
                 <i data-lucide="chevron-down" class="lucide-xs"></i>
               </button>
               <div class="page-menu-popover" id="page-menu-popover" role="menu" aria-label="Page tools">
@@ -656,11 +650,11 @@
                 class="fmt-btn"
                 id="btn-columns-menu"
                 title="Page &amp; Section Columns"
+                aria-label="Page and Section Columns"
                 aria-haspopup="menu"
                 aria-expanded="false"
               >
                 <i data-lucide="columns-2" class="lucide-sm"></i>
-                <span>Columns</span>
                 <i data-lucide="chevron-down" class="lucide-xs"></i>
               </button>
               <div class="columns-menu-popover" id="columns-menu-popover" role="menu" aria-label="Column layout">
@@ -691,6 +685,85 @@
                 </button>
               </div>
             </div>
+          </div>
+
+          <span class="toolbar-divider" data-rich-only="true" aria-hidden="true"></span>
+
+          <div class="toolbar-group" data-rich-only="true" data-toolbar-id="arrange" data-title="Arrange">
+            <button
+              type="button"
+              class="fmt-btn"
+              id="btn-shape-marquee"
+              title="Select Shapes (Right-swipe: Inside • Left-swipe: Crossing • or Alt+Drag)"
+              aria-label="Select Shapes"
+              aria-pressed="false"
+            >
+              <i data-lucide="box-select" class="lucide-sm"></i>
+            </button>
+            <button
+              type="button"
+              class="fmt-btn"
+              id="btn-shape-group"
+              title="Group Selected Objects (Ctrl+G)"
+              aria-label="Group Selected Objects"
+              disabled
+            >
+              <i data-lucide="group" class="lucide-sm"></i>
+            </button>
+            <button
+              type="button"
+              class="fmt-btn"
+              id="btn-shape-ungroup"
+              title="Ungroup Objects (Ctrl+Shift+G)"
+              aria-label="Ungroup Objects"
+              disabled
+            >
+              <i data-lucide="ungroup" class="lucide-sm"></i>
+            </button>
+            <button
+              type="button"
+              class="fmt-btn"
+              id="btn-arrange-front"
+              data-arrange-order="front"
+              title="Bring to Front"
+              aria-label="Bring to Front"
+              disabled
+            >
+              <i data-lucide="bring-to-front" class="lucide-sm"></i>
+            </button>
+            <button
+              type="button"
+              class="fmt-btn"
+              id="btn-arrange-forward"
+              data-arrange-order="forward"
+              title="Bring Forward"
+              aria-label="Bring Forward"
+              disabled
+            >
+              <i data-lucide="layers-arrow-up" class="lucide-sm"></i>
+            </button>
+            <button
+              type="button"
+              class="fmt-btn"
+              id="btn-arrange-backward"
+              data-arrange-order="backward"
+              title="Send Backward"
+              aria-label="Send Backward"
+              disabled
+            >
+              <i data-lucide="layers-arrow-down" class="lucide-sm"></i>
+            </button>
+            <button
+              type="button"
+              class="fmt-btn"
+              id="btn-arrange-back"
+              data-arrange-order="back"
+              title="Send to Back"
+              aria-label="Send to Back"
+              disabled
+            >
+              <i data-lucide="send-to-back" class="lucide-sm"></i>
+            </button>
           </div>
 
           <span class="toolbar-divider" data-md-only="true" aria-hidden="true"></span>
@@ -1034,6 +1107,74 @@
                     <button type="button" class="shape-opt-btn" data-shape-end="end" data-end-style="open">Open</button>
                     <button type="button" class="shape-opt-btn" data-shape-end="end" data-end-style="dot">Dot</button>
                     <button type="button" class="shape-opt-btn" data-shape-end="end" data-end-style="diamond">Diamond</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="shape-color-dropdown" id="shape-effects-dropdown">
+              <button type="button" class="mini-btn" id="btn-shape-effects">Effects ▾</button>
+              <div class="shape-effects-popover" id="shape-effects-popover">
+                <div class="shape-border-section shape-effects-first">
+                  <div class="shape-effects-header-row">
+                    <span class="shape-border-label">Transparency</span>
+                    <span class="shape-effects-val" id="shape-opacity-value">100%</span>
+                  </div>
+                  <input
+                    type="range"
+                    id="shape-opacity-range"
+                    class="shape-opacity-slider"
+                    min="10"
+                    max="100"
+                    step="5"
+                    value="100"
+                    aria-label="Shape opacity"
+                  />
+                  <div class="shape-border-options" id="shape-opacity-presets">
+                    <button type="button" class="shape-opt-btn is-active" data-shape-opacity="1">100%</button>
+                    <button type="button" class="shape-opt-btn" data-shape-opacity="0.75">75%</button>
+                    <button type="button" class="shape-opt-btn" data-shape-opacity="0.5">50%</button>
+                    <button type="button" class="shape-opt-btn" data-shape-opacity="0.25">25%</button>
+                  </div>
+                </div>
+
+                <div class="shape-border-section">
+                  <span class="shape-border-label">Drop Shadow</span>
+                  <div class="shape-border-options" id="shape-shadow-options">
+                    <button type="button" class="shape-opt-btn is-active" data-shape-shadow="none">None</button>
+                    <button type="button" class="shape-opt-btn" data-shape-shadow="soft">Soft</button>
+                    <button type="button" class="shape-opt-btn" data-shape-shadow="medium">Medium</button>
+                    <button type="button" class="shape-opt-btn" data-shape-shadow="strong">Strong</button>
+                  </div>
+                </div>
+
+                <div class="shape-border-section" id="shape-gradient-section">
+                  <div class="shape-effects-header-row">
+                    <span class="shape-border-label">Gradient Fill</span>
+                    <button type="button" class="shape-opt-btn" id="btn-shape-grad-clear">Solid</button>
+                  </div>
+                  <div class="shape-grad-presets" id="shape-grad-presets">
+                    <button type="button" class="shape-grad-swatch shape-grad-preset-1" data-grad-start="#3b82f6" data-grad-end="#1d4ed8" title="Ocean Blue"></button>
+                    <button type="button" class="shape-grad-swatch shape-grad-preset-2" data-grad-start="#a855f7" data-grad-end="#ec4899" title="Violet Pink"></button>
+                    <button type="button" class="shape-grad-swatch shape-grad-preset-3" data-grad-start="#f59e0b" data-grad-end="#ef4444" title="Sunset"></button>
+                    <button type="button" class="shape-grad-swatch shape-grad-preset-4" data-grad-start="#10b981" data-grad-end="#0d9488" title="Emerald"></button>
+                    <button type="button" class="shape-grad-swatch shape-grad-preset-5" data-grad-start="#f8fafc" data-grad-end="#cbd5e1" title="Silver"></button>
+                  </div>
+                  <div class="shape-grad-custom-row">
+                    <label class="shape-grad-color-field" title="Start Color">
+                      <span>From</span>
+                      <input type="color" id="shape-grad-start" value="#3b82f6" aria-label="Gradient start colour" />
+                    </label>
+                    <label class="shape-grad-color-field" title="End Color">
+                      <span>To</span>
+                      <input type="color" id="shape-grad-end" value="#1d4ed8" aria-label="Gradient end colour" />
+                    </label>
+                  </div>
+                  <div class="shape-border-options" id="shape-grad-angles">
+                    <button type="button" class="shape-opt-btn is-active" data-grad-angle="135">↘</button>
+                    <button type="button" class="shape-opt-btn" data-grad-angle="90">↓</button>
+                    <button type="button" class="shape-opt-btn" data-grad-angle="0">→</button>
+                    <button type="button" class="shape-opt-btn" data-grad-angle="45">↗</button>
                   </div>
                 </div>
               </div>
@@ -1389,14 +1530,7 @@
         </button>
       </div>
       <div class="settings-drawer-body" id="settings-drawer-body">
-        <div class="settings-section-header">Startup &amp; Files</div>
-        <div class="settings-row">
-          <label class="settings-label" for="settings-start-in">Start In</label>
-          <select id="settings-start-in" class="settings-select">
-            <option value="start-page">Start Page</option>
-            <option value="document" selected>Document</option>
-          </select>
-        </div>
+        <div class="settings-section-header">Files &amp; Saving</div>
         <div class="settings-row">
           <label class="settings-label" for="settings-default-mode">Default Document Mode</label>
           <select id="settings-default-mode" class="settings-select">
@@ -1677,52 +1811,6 @@
       <div class="prompt-modal-footer">
         <button type="button" class="settings-footer-btn" id="btn-cancel-template">Cancel</button>
         <button type="button" class="settings-footer-btn is-primary" id="btn-confirm-template">Save Template</button>
-      </div>
-    </section>
-
-    <div class="dict-modal-backdrop" id="all-templates-modal-backdrop" aria-hidden="true"></div>
-    <section
-      class="all-templates-modal"
-      id="all-templates-modal"
-      role="dialog"
-      aria-modal="true"
-      aria-label="All Templates"
-      aria-hidden="true"
-    >
-      <div class="dict-modal-header">
-        <span class="settings-drawer-title">All Templates</span>
-        <button type="button" class="settings-close-btn" id="btn-close-all-templates" title="Close" aria-label="Close">
-          <i data-lucide="x" class="lucide-sm"></i>
-        </button>
-      </div>
-      <div class="all-templates-modal-body">
-        <div class="recent-templates-grid" id="all-templates-grid"></div>
-      </div>
-      <div class="dict-modal-footer">
-        <button type="button" class="settings-footer-btn is-primary" id="btn-done-all-templates">Done</button>
-      </div>
-    </section>
-
-    <div class="dict-modal-backdrop" id="all-recents-modal-backdrop" aria-hidden="true"></div>
-    <section
-      class="all-templates-modal"
-      id="all-recents-modal"
-      role="dialog"
-      aria-modal="true"
-      aria-label="All Recent Documents"
-      aria-hidden="true"
-    >
-      <div class="dict-modal-header">
-        <span class="settings-drawer-title">Recent Documents</span>
-        <button type="button" class="settings-close-btn" id="btn-close-all-recents" title="Close" aria-label="Close">
-          <i data-lucide="x" class="lucide-sm"></i>
-        </button>
-      </div>
-      <div class="all-templates-modal-body">
-        <div class="recent-docs-list" id="all-recents-list" role="list"></div>
-      </div>
-      <div class="dict-modal-footer">
-        <button type="button" class="settings-footer-btn is-primary" id="btn-done-all-recents">Done</button>
       </div>
     </section>
 

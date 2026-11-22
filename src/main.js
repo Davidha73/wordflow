@@ -1,11 +1,12 @@
 import { invoke } from '@tauri-apps/api/core';
 import { getVersion } from '@tauri-apps/api/app';
 import { getCurrentWebview } from '@tauri-apps/api/webview';
+import { readFile } from '@tauri-apps/plugin-fs';
 import { createEditor } from './modules/editor.js';
 import { createFileService } from './modules/fileService.js';
 import { createStatusBar } from './modules/statusBar.js';
 import { createSettingsDrawer } from './modules/settingsDrawer.js';
-import { createRecentDocsView, STARTER_TEMPLATES } from './modules/recentDocsView.js';
+import { STARTER_TEMPLATES } from './modules/recentDocsView.js';
 import {
   addCustomTemplate,
   clearRecentDocuments,
@@ -20,6 +21,7 @@ import { initWindowState } from './modules/windowState.js';
 import { applyPageLayout } from './modules/pageLayout.js';
 import { createTabManager } from './modules/tabManager.js';
 import { initIcons } from './modules/icons.js';
+import { sendFlowHandoff, showFlowToast, startFlowHandoffListener } from './modules/flowLink.js';
 
 async function initApp() {
   initIcons();
@@ -284,7 +286,6 @@ async function initApp() {
     onAutoSaveIntervalChange: (seconds) => applyAutoSaveInterval(seconds),
     onClearRecentDocuments: async () => {
       await clearRecentDocuments();
-      recentDocsView?.render?.([]);
     },
     onResetWorkspaceLayout: () => editor.resetWorkspaceLayout(),
     onDictionaryChange: () => editor.refreshGrammar(),
@@ -310,36 +311,9 @@ async function initApp() {
   const printBtnEl = document.getElementById('btn-print');
   const inspectorToggleBtnEl = document.getElementById('btn-inspector-toggle');
 
-  const recentDocsView = createRecentDocsView({
-    containerEl: document.getElementById('recent-docs-view'),
-    onOpenFile: (path) => fileService?.openFileByPath(path),
-    onNewDocument: (mode) => fileService?.newDocument(mode),
-    onNewTemplate: (tpl) => fileService?.newFromTemplate(tpl),
-    getCustomTemplates,
-    onDeleteTemplate: async (id) => {
-      await removeCustomTemplate(id);
-      recentDocsView.render(getRecentDocuments());
-    },
-    onOpenDialog: () => fileService?.openDocument(),
-    onClearRecent: async () => {
-      await clearRecentDocuments();
-      recentDocsView.render([]);
-    },
-    onRemoveRecent: async (path) => {
-      const next = await removeRecentDocument(path);
-      recentDocsView.render(next);
-    },
-    onCopyPath: (path) => {
-      if (path) navigator.clipboard?.writeText(path);
-    },
-    onShowInExplorer: (path) => {
-      if (path) invoke('show_in_explorer', { path }).catch(() => {});
-    },
-  });
-
   fileService = createFileService({
     editor,
-    initialHasOpenDocument: currentStartIn !== 'start-page',
+    initialHasOpenDocument: true,
     onStateChange: ({ fileName, isDirty, hasOpenDocument }) => {
       appShellEl?.setAttribute('data-has-document', String(hasOpenDocument));
       if (saveBtnEl) saveBtnEl.disabled = !hasOpenDocument;
@@ -366,16 +340,13 @@ async function initApp() {
       if (pillDirtyEl) {
         pillDirtyEl.classList.toggle('is-dirty', Boolean(hasOpenDocument && isDirty));
       }
-      recentDocsView.render(getRecentDocuments());
       statusBar.updateFile({ fileName, isDirty });
       syncAutoSaveStatus();
       document.title = '';
     },
   });
 
-  if (currentStartIn !== 'start-page') {
-    tabManager.createTab({ filePath: null, isDirty: false });
-  }
+  tabManager.createTab({ filePath: null, isDirty: false });
   fileService.setTabManager(tabManager);
 
   document.getElementById('btn-new').addEventListener('click', () => {
@@ -686,6 +657,37 @@ async function initApp() {
 
   const workspaceEl = document.getElementById('workspace');
 
+  const IMAGE_MIME_BY_EXT = {
+    png: 'image/png',
+    jpg: 'image/jpeg',
+    jpeg: 'image/jpeg',
+    gif: 'image/gif',
+    webp: 'image/webp',
+    svg: 'image/svg+xml',
+    bmp: 'image/bmp',
+  };
+
+  async function embedDroppedImagePaths(paths) {
+    for (const filePath of paths) {
+      const extMatch = (filePath || '').toLowerCase().match(/\.([a-z0-9]+)$/);
+      const mime = extMatch ? IMAGE_MIME_BY_EXT[extMatch[1]] : null;
+      if (!mime) continue;
+      try {
+        const bytes = await readFile(filePath);
+        let binary = '';
+        const chunk = 0x8000;
+        for (let i = 0; i < bytes.length; i += chunk) {
+          binary += String.fromCharCode(...bytes.subarray(i, i + chunk));
+        }
+        const dataUrl = `data:${mime};base64,${btoa(binary)}`;
+        const name = filePath.split(/[/\\]/).pop() || 'Dropped image';
+        editor.insertImageDataUrl(dataUrl, name);
+      } catch {
+        // Ignore unreadable image files
+      }
+    }
+  }
+
   getCurrentWebview()
     .onDragDropEvent((event) => {
       const { type } = event.payload;
@@ -697,7 +699,15 @@ async function initApp() {
         workspaceEl.classList.remove('is-drag-over');
         const paths = event.payload.paths;
         if (Array.isArray(paths) && paths.length > 0) {
-          fileService.openFileByPath(paths[0]);
+          const hasOpenDoc = appShellEl?.getAttribute('data-has-document') !== 'false';
+          const imagePaths = paths.filter((p) =>
+            /\.(png|jpe?g|gif|webp|svg|bmp)$/i.test(p || '')
+          );
+          if (hasOpenDoc && editor.getMode() === 'docx' && imagePaths.length > 0) {
+            embedDroppedImagePaths(imagePaths);
+          } else {
+            fileService.openFileByPath(paths[0]);
+          }
         }
       }
     })
@@ -848,6 +858,46 @@ async function initApp() {
   if (initialSettings.lastSeenVersion !== appVersion) {
     setWhatsNewOpen(true);
   }
+
+  document.getElementById('btn-switch-flowdash')?.addEventListener('click', () => {
+    invoke('return_to_flowdash').catch(() => {});
+  });
+
+  document.getElementById('btn-send-boardflow')?.addEventListener('click', async () => {
+    const payload = editor.getFlowExportPayload?.();
+    if (!payload) {
+      showFlowToast('Select text or shapes to send');
+      return;
+    }
+    try {
+      await sendFlowHandoff('boardflow', payload);
+      showFlowToast('Sent to BoardFlow');
+    } catch {
+      showFlowToast('Could not send to BoardFlow');
+    }
+  });
+
+  startFlowHandoffListener('wordflow', async (payload) => {
+    if (payload.kind === 'new-document') {
+      await fileService?.newDocument(payload.mode);
+      return;
+    }
+    if (payload.kind === 'new-template' && payload.template) {
+      await fileService?.newFromTemplate(payload.template);
+      return;
+    }
+    if (payload.kind === 'open-file' && payload.path) {
+      await fileService?.openFileByPath(payload.path);
+      return;
+    }
+    const appShellEl = document.querySelector('.app-shell');
+    if (appShellEl?.getAttribute('data-has-document') === 'false') {
+      await fileService?.newDocument();
+    }
+    if (editor.importFlowPayload?.(payload)) {
+      showFlowToast('Imported from BoardFlow');
+    }
+  });
 
   statusBar.updateMode(editor.getMode());
   statusBar.updateStats(editor.getStats());

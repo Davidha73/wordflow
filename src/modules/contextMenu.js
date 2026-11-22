@@ -437,6 +437,15 @@ export function createContextMenu({
       title: 'Find & Replace (Ctrl+F)',
       onSelect: () => onFindReplace?.(),
     });
+    addIconButton(editRow, {
+      icon: 'send',
+      title: 'Send to BoardFlow',
+      disabled: !hasSelection,
+      onSelect: () => {
+        restoreRichRange(savedRange);
+        document.getElementById('btn-send-boardflow')?.click();
+      },
+    });
 
     const grammarMatch = getGrammarIssueAtPoint(event.clientX, event.clientY);
     if (grammarMatch) {

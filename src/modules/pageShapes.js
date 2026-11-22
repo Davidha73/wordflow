@@ -50,6 +50,13 @@ export function createPageShapes({ wordEl, onMutate }) {
   const borderPopoverEl = document.getElementById('shape-border-popover');
   const borderGridEl = document.getElementById('shape-border-grid');
   const borderIndicatorEl = document.getElementById('shape-border-indicator');
+  const effectsBtnEl = document.getElementById('btn-shape-effects');
+  const effectsPopoverEl = document.getElementById('shape-effects-popover');
+  const opacityRangeEl = document.getElementById('shape-opacity-range');
+  const opacityValueEl = document.getElementById('shape-opacity-value');
+  const gradientSectionEl = document.getElementById('shape-gradient-section');
+  const gradStartInputEl = document.getElementById('shape-grad-start');
+  const gradEndInputEl = document.getElementById('shape-grad-end');
   const alignBtnEl = document.getElementById('btn-shape-align');
   const alignPopoverEl = document.getElementById('shape-align-popover');
   const endsDropdownEl = document.getElementById('shape-ends-dropdown');
@@ -94,6 +101,9 @@ export function createPageShapes({ wordEl, onMutate }) {
   const textCheckboxEl = document.getElementById('chk-shape-text');
   const cropBtnEl = document.getElementById('btn-shape-crop');
   const cropToBtnEl = document.getElementById('btn-shape-crop-to');
+  const groupBtnEl = document.getElementById('btn-shape-group');
+  const ungroupBtnEl = document.getElementById('btn-shape-ungroup');
+  const arrangeOrderBtns = Array.from(document.querySelectorAll('[data-arrange-order]'));
   const unmergeBtnEl = document.getElementById('btn-shape-unmerge');
   const doneMergeBtnEl = document.getElementById('btn-shape-done-merge');
   const marqueeBtnEl = document.getElementById('btn-shape-marquee');
@@ -155,6 +165,7 @@ export function createPageShapes({ wordEl, onMutate }) {
   function closeColorPopovers() {
     if (fillPopoverEl) fillPopoverEl.classList.remove('is-open');
     if (borderPopoverEl) borderPopoverEl.classList.remove('is-open');
+    if (effectsPopoverEl) effectsPopoverEl.classList.remove('is-open');
     if (alignPopoverEl) alignPopoverEl.classList.remove('is-open');
     if (endsPopoverEl) endsPopoverEl.classList.remove('is-open');
     if (wrapPopoverEl) wrapPopoverEl.classList.remove('is-open');
@@ -167,6 +178,11 @@ export function createPageShapes({ wordEl, onMutate }) {
 
   function hideMiniBar() {
     closeColorPopovers();
+    if (groupBtnEl) groupBtnEl.disabled = true;
+    if (ungroupBtnEl) ungroupBtnEl.disabled = true;
+    arrangeOrderBtns.forEach((btn) => {
+      btn.disabled = true;
+    });
     if (miniBarEl) {
       miniBarEl.classList.remove('is-visible');
     }
@@ -219,6 +235,22 @@ export function createPageShapes({ wordEl, onMutate }) {
         shape.sources.length >= 2;
       unmergeBtnEl.classList.toggle('is-hidden', !canUnmerge);
     }
+    if (groupBtnEl) {
+      const allSameGroup =
+        selected.length >= 2 &&
+        Boolean(selected[0].groupId) &&
+        selected.every((s) => s.groupId === selected[0].groupId);
+      const canGroup = !liveMergeSession && selected.length >= 2 && !allSameGroup;
+      groupBtnEl.disabled = !canGroup;
+    }
+    if (ungroupBtnEl) {
+      const canUngroup = !liveMergeSession && selected.some((s) => Boolean(s.groupId));
+      ungroupBtnEl.disabled = !canUngroup;
+    }
+    const disableOrder = Boolean(liveMergeSession) || selected.length === 0;
+    arrangeOrderBtns.forEach((btn) => {
+      btn.disabled = disableOrder;
+    });
     if (doneMergeBtnEl) {
       doneMergeBtnEl.classList.toggle('is-hidden', !liveMergeSession);
       doneMergeBtnEl.classList.toggle('is-active', Boolean(liveMergeSession));
@@ -297,6 +329,35 @@ export function createPageShapes({ wordEl, onMutate }) {
     borderPopoverEl?.querySelectorAll('[data-shape-style]').forEach((btn) => {
       btn.classList.toggle('is-active', btn.dataset.shapeStyle === activeStyle);
     });
+
+    const pct = Math.round((shape.opacity ?? 1) * 100);
+    if (opacityRangeEl) opacityRangeEl.value = String(pct);
+    if (opacityValueEl) opacityValueEl.textContent = `${pct}%`;
+    effectsPopoverEl?.querySelectorAll('[data-shape-opacity]').forEach((btn) => {
+      btn.classList.toggle('is-active', Math.round(Number(btn.dataset.shapeOpacity) * 100) === pct);
+    });
+
+    const activeShadow = shape.shadow || 'none';
+    effectsPopoverEl?.querySelectorAll('[data-shape-shadow]').forEach((btn) => {
+      btn.classList.toggle('is-active', btn.dataset.shapeShadow === activeShadow);
+    });
+
+    const canGradient = selected.some(
+      (s) => s.type !== 'line' && s.type !== 'arrow' && s.type !== 'image'
+    );
+    if (gradientSectionEl) {
+      gradientSectionEl.classList.toggle('is-hidden', !canGradient);
+    }
+    if (canGradient) {
+      if (gradStartInputEl && shape.gradientStart) gradStartInputEl.value = shape.gradientStart;
+      if (gradEndInputEl && shape.gradientEnd) gradEndInputEl.value = shape.gradientEnd;
+      const activeAngle = String(shape.gradientAngle ?? 135);
+      effectsPopoverEl?.querySelectorAll('[data-grad-angle]').forEach((btn) => {
+        btn.classList.toggle('is-active', btn.dataset.gradAngle === activeAngle);
+      });
+      const clearGradBtn = document.getElementById('btn-shape-grad-clear');
+      clearGradBtn?.classList.toggle('is-active', shape.fillType !== 'gradient');
+    }
   }
 
   function positionMiniBar(shape, { show = false } = {}) {
@@ -326,17 +387,25 @@ export function createPageShapes({ wordEl, onMutate }) {
     updateIndicators(target);
   }
 
+  function getGroupMemberIds(id) {
+    const target = shapes.find((s) => s.id === id);
+    if (!target) return [];
+    if (!target.groupId) return [id];
+    return shapes.filter((s) => s.groupId === target.groupId).map((s) => s.id);
+  }
+
   function selectShape(id, { toggle = false } = {}) {
     if (!id) {
       selectedIds.clear();
     } else if (toggle) {
+      const memberIds = getGroupMemberIds(id);
       if (selectedIds.has(id)) {
-        selectedIds.delete(id);
+        memberIds.forEach((mid) => selectedIds.delete(mid));
       } else {
-        selectedIds.add(id);
+        memberIds.forEach((mid) => selectedIds.add(mid));
       }
     } else {
-      selectedIds = new Set([id]);
+      selectedIds = new Set(getGroupMemberIds(id));
     }
     render();
     const sel = getSelectedShape();
@@ -345,6 +414,32 @@ export function createPageShapes({ wordEl, onMutate }) {
     } else {
       hideMiniBar();
     }
+  }
+
+  function groupSelectedShapes() {
+    const selected = getSelectedShapes();
+    if (selected.length < 2) return;
+    const groupId = `grp-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 5)}`;
+    selected.forEach((s) => {
+      s.groupId = groupId;
+    });
+    render();
+    positionMiniBar();
+    onMutate?.();
+  }
+
+  function ungroupSelectedShapes() {
+    const selected = getSelectedShapes();
+    const groupIds = new Set(selected.map((s) => s.groupId).filter(Boolean));
+    if (groupIds.size === 0) return;
+    shapes.forEach((s) => {
+      if (s.groupId && groupIds.has(s.groupId)) {
+        delete s.groupId;
+      }
+    });
+    render();
+    positionMiniBar();
+    onMutate?.();
   }
 
   function makeRegularPolygonRing(sides, startAngleDeg = -90) {
@@ -494,11 +589,68 @@ export function createPageShapes({ wordEl, onMutate }) {
     selected.forEach((s) => {
       if (s.type !== 'line' && s.type !== 'arrow') {
         s.fillColor = hex;
+        s.fillType = 'solid';
       }
     });
     render();
     positionMiniBar(selected[0]);
     closeColorPopovers();
+    onMutate?.();
+  }
+
+  function setShapeOpacity(val, { close = false } = {}) {
+    const clamped = Math.min(1, Math.max(0.1, Number(val) || 1));
+    const selected = getSelectedShapes();
+    if (selected.length === 0) return;
+    selected.forEach((s) => {
+      s.opacity = clamped;
+    });
+    render();
+    positionMiniBar(selected[0]);
+    if (close) closeColorPopovers();
+    onMutate?.();
+  }
+
+  function setShapeShadow(shadow) {
+    const valid = ['none', 'soft', 'medium', 'strong'].includes(shadow) ? shadow : 'none';
+    const selected = getSelectedShapes();
+    if (selected.length === 0) return;
+    selected.forEach((s) => {
+      s.shadow = valid;
+    });
+    render();
+    positionMiniBar(selected[0]);
+    onMutate?.();
+  }
+
+  function setShapeGradient({ start, end, angle } = {}) {
+    const selected = getSelectedShapes();
+    if (selected.length === 0) return;
+    selected.forEach((s) => {
+      if (s.type === 'line' || s.type === 'arrow' || s.type === 'image') return;
+      s.fillType = 'gradient';
+      if (start) s.gradientStart = start;
+      else if (!s.gradientStart) s.gradientStart = gradStartInputEl?.value || '#3b82f6';
+      if (end) s.gradientEnd = end;
+      else if (!s.gradientEnd) s.gradientEnd = gradEndInputEl?.value || '#1d4ed8';
+      if (angle !== undefined) s.gradientAngle = Number(angle);
+      else if (s.gradientAngle === undefined) s.gradientAngle = 135;
+    });
+    render();
+    positionMiniBar(selected[0]);
+    onMutate?.();
+  }
+
+  function clearShapeGradient() {
+    const selected = getSelectedShapes();
+    if (selected.length === 0) return;
+    selected.forEach((s) => {
+      if (s.type !== 'line' && s.type !== 'arrow' && s.type !== 'image') {
+        s.fillType = 'solid';
+      }
+    });
+    render();
+    positionMiniBar(selected[0]);
     onMutate?.();
   }
 
@@ -882,18 +1034,36 @@ export function createPageShapes({ wordEl, onMutate }) {
     }
   }
 
+  function getGradientVector(angleDeg) {
+    const rad = ((Number(angleDeg) || 0) * Math.PI) / 180;
+    const x1 = Math.round((0.5 - 0.5 * Math.cos(rad)) * 100);
+    const y1 = Math.round((0.5 - 0.5 * Math.sin(rad)) * 100);
+    const x2 = Math.round((0.5 + 0.5 * Math.cos(rad)) * 100);
+    const y2 = Math.round((0.5 + 0.5 * Math.sin(rad)) * 100);
+    return { x1: `${x1}%`, y1: `${y1}%`, x2: `${x2}%`, y2: `${y2}%` };
+  }
+
   function renderBoxShape(shape) {
     const isSelected = selectedIds.has(shape.id);
     const isSingleSelected = isSelected && selectedIds.size === 1;
-    const fill = shape.fillColor === 'none' ? 'transparent' : shape.fillColor;
+    const useGradient =
+      shape.fillType === 'gradient' && shape.gradientStart && shape.gradientEnd;
+    const gradId = `shape-grad-${shape.id}`;
+    const fill = useGradient
+      ? `url(#${gradId})`
+      : shape.fillColor === 'none'
+        ? 'transparent'
+        : shape.fillColor;
     const stroke = shape.strokeColor === 'none' ? 'none' : shape.strokeColor;
     const strokeWidth = shape.strokeColor === 'none' ? 0 : (shape.strokeWidth || 2);
     const dashArray = strokeWidth > 0 ? getStrokeDashArray(shape.strokeStyle, strokeWidth) : '';
-    const labelColor = LIGHT_FILLS.has(shape.fillColor) ? '#1a1a1a' : '#ffffff';
+    const labelColor = !useGradient && LIGHT_FILLS.has(shape.fillColor) ? '#1a1a1a' : '#ffffff';
+    const shadowClass =
+      shape.shadow && shape.shadow !== 'none' ? ` has-shadow-${shape.shadow}` : '';
 
     const el = document.createElement('div');
     const isCropping = shape.type === 'image' && croppingShapeId === shape.id && isSingleSelected;
-    el.className = `word-shape word-shape-box${isSelected ? ' is-selected' : ''}${isCropping ? ' is-cropping' : ''}`;
+    el.className = `word-shape word-shape-box${shadowClass}${isSelected ? ' is-selected' : ''}${isCropping ? ' is-cropping' : ''}`;
     el.dataset.shapeId = shape.id;
     el.setAttribute('tabindex', '0');
     el.style.left = `${shape.x}px`;
@@ -901,6 +1071,9 @@ export function createPageShapes({ wordEl, onMutate }) {
     el.style.width = `${shape.w}px`;
     el.style.height = `${shape.h}px`;
     el.style.transform = `rotate(${shape.rotation || 0}deg)`;
+    if (typeof shape.opacity === 'number' && shape.opacity < 1) {
+      el.style.opacity = String(shape.opacity);
+    }
 
     if (shape.type === 'image') {
       const crop = shape.crop || { left: 0, top: 0, right: 0, bottom: 0 };
@@ -951,6 +1124,23 @@ export function createPageShapes({ wordEl, onMutate }) {
         width: shape.w,
         height: shape.h,
       });
+
+      if (useGradient) {
+        const defs = createSvgEl('defs');
+        const vec = getGradientVector(shape.gradientAngle ?? 135);
+        const grad = createSvgEl('linearGradient', {
+          id: gradId,
+          ...vec,
+        });
+        grad.appendChild(
+          createSvgEl('stop', { offset: '0%', 'stop-color': shape.gradientStart })
+        );
+        grad.appendChild(
+          createSvgEl('stop', { offset: '100%', 'stop-color': shape.gradientEnd })
+        );
+        defs.appendChild(grad);
+        svg.appendChild(defs);
+      }
 
       if (shape.type === 'rect') {
         const radius = Number(shape.cornerRadius) || 0;
@@ -1122,14 +1312,19 @@ export function createPageShapes({ wordEl, onMutate }) {
     const lx2 = shape.x2 - minX;
     const ly2 = shape.y2 - minY;
 
+    const shadowClass =
+      shape.shadow && shape.shadow !== 'none' ? ` has-shadow-${shape.shadow}` : '';
     const el = document.createElement('div');
-    el.className = `word-shape word-shape-line${isSelected ? ' is-selected' : ''}`;
+    el.className = `word-shape word-shape-line${shadowClass}${isSelected ? ' is-selected' : ''}`;
     el.dataset.shapeId = shape.id;
     el.setAttribute('tabindex', '0');
     el.style.left = `${minX}px`;
     el.style.top = `${minY}px`;
     el.style.width = `${width}px`;
     el.style.height = `${height}px`;
+    if (typeof shape.opacity === 'number' && shape.opacity < 1) {
+      el.style.opacity = String(shape.opacity);
+    }
 
     const svg = createSvgEl('svg', {
       class: 'word-shape-svg',
@@ -1703,10 +1898,16 @@ export function createPageShapes({ wordEl, onMutate }) {
     } else if (mode === 'move-box') {
       const rawX = Math.max(0, dragOp.origX + (event.clientX - dragOp.startX));
       const rawY = Math.max(0, dragOp.origY + (event.clientY - dragOp.startY));
-      const snapped = snapBoxToPeers(shape, rawX, rawY);
-      shape.x = snapped.x;
-      shape.y = snapped.y;
-      activeAlignGuides = snapped.guides;
+      if (event.altKey) {
+        shape.x = rawX;
+        shape.y = rawY;
+        activeAlignGuides = [];
+      } else {
+        const snapped = snapBoxToPeers(shape, rawX, rawY);
+        shape.x = snapped.x;
+        shape.y = snapped.y;
+        activeAlignGuides = snapped.guides;
+      }
       syncAttachedLines(shape);
       render();
       positionMiniBar(shape);
@@ -1739,13 +1940,13 @@ export function createPageShapes({ wordEl, onMutate }) {
         const snappedAngle = Math.round(Math.atan2(rawY - anchorY, rawX - anchorX) / step) * step;
         rawX = Math.max(0, Math.round(anchorX + dist * Math.cos(snappedAngle)));
         rawY = Math.max(0, Math.round(anchorY + dist * Math.sin(snappedAngle)));
-      } else if (Math.abs(rawY - anchorY) <= 8) {
+      } else if (!event.altKey && Math.abs(rawY - anchorY) <= 8) {
         rawY = anchorY;
-      } else if (Math.abs(rawX - anchorX) <= 8) {
+      } else if (!event.altKey && Math.abs(rawX - anchorX) <= 8) {
         rawX = anchorX;
       }
 
-      const snapped = findSnapAnchor(rawX, rawY, 12, shape.id);
+      const snapped = event.altKey ? null : findSnapAnchor(rawX, rawY, 12, shape.id);
       activeSnapPoint = snapped ? { x: snapped.x, y: snapped.y } : null;
       const finalX =
         shape.axisLock === 'v' ? anchorX : snapped ? Math.round(snapped.x) : rawX;
@@ -1843,7 +2044,7 @@ export function createPageShapes({ wordEl, onMutate }) {
       }
 
       const resizeGuides = [];
-      if (shape.type !== 'image' && !event.shiftKey) {
+      if (shape.type !== 'image' && !event.shiftKey && !event.altKey) {
         const snapThreshold = 10;
         const pageSnap = getPageSnapMetrics(y + h / 2);
         if (dir.includes('e')) {
@@ -1984,6 +2185,38 @@ export function createPageShapes({ wordEl, onMutate }) {
       borderPopoverEl.classList.toggle('is-open', willOpen);
     });
   }
+
+  if (effectsBtnEl && effectsPopoverEl) {
+    effectsBtnEl.addEventListener('click', () => {
+      const willOpen = !effectsPopoverEl.classList.contains('is-open');
+      closeColorPopovers();
+      effectsPopoverEl.classList.toggle('is-open', willOpen);
+    });
+  }
+
+  if (opacityRangeEl) {
+    opacityRangeEl.addEventListener('input', () => {
+      const pct = Number(opacityRangeEl.value) || 100;
+      if (opacityValueEl) opacityValueEl.textContent = `${pct}%`;
+      setShapeOpacity(pct / 100);
+    });
+  }
+
+  if (gradStartInputEl) {
+    gradStartInputEl.addEventListener('input', () => {
+      setShapeGradient({ start: gradStartInputEl.value });
+    });
+  }
+
+  if (gradEndInputEl) {
+    gradEndInputEl.addEventListener('input', () => {
+      setShapeGradient({ end: gradEndInputEl.value });
+    });
+  }
+
+  document.getElementById('btn-shape-grad-clear')?.addEventListener('click', () => {
+    clearShapeGradient();
+  });
 
   if (alignBtnEl && alignPopoverEl) {
     alignBtnEl.addEventListener('click', () => {
@@ -2137,6 +2370,20 @@ export function createPageShapes({ wordEl, onMutate }) {
     onMutate?.();
     return true;
   }
+
+  groupBtnEl?.addEventListener('click', () => {
+    groupSelectedShapes();
+  });
+
+  ungroupBtnEl?.addEventListener('click', () => {
+    ungroupSelectedShapes();
+  });
+
+  arrangeOrderBtns.forEach((btn) => {
+    btn.addEventListener('click', () => {
+      reorderSelectedShapes(btn.dataset.arrangeOrder);
+    });
+  });
 
   if (unmergeBtnEl) {
     unmergeBtnEl.addEventListener('click', () => {
@@ -2498,6 +2745,29 @@ export function createPageShapes({ wordEl, onMutate }) {
         setBorderColor(noBorder.dataset.shapeBorder);
         return;
       }
+      const opacityBtn = event.target.closest('[data-shape-opacity]');
+      if (opacityBtn) {
+        setShapeOpacity(Number(opacityBtn.dataset.shapeOpacity));
+        return;
+      }
+      const shadowBtn = event.target.closest('[data-shape-shadow]');
+      if (shadowBtn) {
+        setShapeShadow(shadowBtn.dataset.shapeShadow);
+        return;
+      }
+      const gradPresetBtn = event.target.closest('[data-grad-start][data-grad-end]');
+      if (gradPresetBtn) {
+        setShapeGradient({
+          start: gradPresetBtn.dataset.gradStart,
+          end: gradPresetBtn.dataset.gradEnd,
+        });
+        return;
+      }
+      const gradAngleBtn = event.target.closest('[data-grad-angle]');
+      if (gradAngleBtn) {
+        setShapeGradient({ angle: Number(gradAngleBtn.dataset.gradAngle) });
+        return;
+      }
       const widthBtn = event.target.closest('[data-shape-width]');
       if (widthBtn) {
         setBorderWidth(widthBtn.dataset.shapeWidth);
@@ -2728,6 +2998,13 @@ export function createPageShapes({ wordEl, onMutate }) {
     } else if (isMod && key === 'x') {
       event.preventDefault();
       if (copySelectedShapes()) deleteSelected();
+    } else if (isMod && key === 'g') {
+      event.preventDefault();
+      if (event.shiftKey) {
+        ungroupSelectedShapes();
+      } else {
+        groupSelectedShapes();
+      }
     } else if ((event.key === 'Delete' || event.key === 'Backspace') && !inWord) {
       event.preventDefault();
       deleteSelected();
@@ -2862,5 +3139,62 @@ export function createPageShapes({ wordEl, onMutate }) {
     syncActiveLabel,
     applyLabelStyle,
     syncWrapSpacers,
+    getSelectedShapesPayload: () => {
+      if (selectedIds.size === 0) return null;
+      const list = shapes.filter((s) => selectedIds.has(s.id)).map((s) => JSON.parse(JSON.stringify(s)));
+      return list.length > 0 ? { source: 'wordflow', kind: 'shapes', shapes: list } : null;
+    },
+    importFlowShapes: (rawShapes) => {
+      if (!Array.isArray(rawShapes) || rawShapes.length === 0) return false;
+      let minX = Infinity;
+      let minY = Infinity;
+      let maxX = -Infinity;
+      let maxY = -Infinity;
+      rawShapes.forEach((s) => {
+        const sx1 = s.type === 'line' || s.type === 'arrow' ? Math.min(s.x1, s.x2) : s.x;
+        const sy1 = s.type === 'line' || s.type === 'arrow' ? Math.min(s.y1, s.y2) : s.y;
+        const sx2 = s.type === 'line' || s.type === 'arrow' ? Math.max(s.x1, s.x2) : s.x + (s.w || 120);
+        const sy2 = s.type === 'line' || s.type === 'arrow' ? Math.max(s.y1, s.y2) : s.y + (s.h || 80);
+        minX = Math.min(minX, sx1);
+        minY = Math.min(minY, sy1);
+        maxX = Math.max(maxX, sx2);
+        maxY = Math.max(maxY, sy2);
+      });
+      const width = Math.max(1, maxX - minX);
+      const scale = width > 600 ? 600 / width : 1;
+      const groupId = rawShapes.length > 1 ? `grp-${Date.now().toString(36)}` : undefined;
+      const nextIds = new Set();
+
+      rawShapes.forEach((raw) => {
+        const clone = JSON.parse(JSON.stringify(raw));
+        clone.id = `shape-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 7)}`;
+        clone.wrapMode = clone.wrapMode || 'square';
+        if (groupId) clone.groupId = groupId;
+        if (clone.type === 'line' || clone.type === 'arrow') {
+          clone.x1 = Math.round((clone.x1 - minX) * scale + 80);
+          clone.y1 = Math.round((clone.y1 - minY) * scale + 100);
+          clone.x2 = Math.round((clone.x2 - minX) * scale + 80);
+          clone.y2 = Math.round((clone.y2 - minY) * scale + 100);
+        } else {
+          clone.x = Math.round((clone.x - minX) * scale + 80);
+          clone.y = Math.round((clone.y - minY) * scale + 100);
+          clone.w = Math.max(24, Math.round((clone.w || 120) * scale));
+          clone.h = Math.max(24, Math.round((clone.h || 80) * scale));
+          if (clone.fontSize) {
+            clone.fontSize = Math.max(9, Math.round(Number(clone.fontSize) * scale));
+          }
+        }
+        shapes.push(clone);
+        nextIds.add(clone.id);
+      });
+
+      selectedIds = nextIds;
+      render();
+      const firstSel = getSelectedShape();
+      if (firstSel) positionMiniBar(firstSel, { show: true });
+      syncWrapSpacers();
+      onMutate?.();
+      return true;
+    },
   };
 }

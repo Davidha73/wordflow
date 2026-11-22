@@ -1,4 +1,5 @@
-const STORAGE_KEY = 'wordflow.toolbarLayout.v1';
+import { getSettingsSnapshot, saveSettings } from './settingsStore.js';
+
 const DOCK_HIT_PAD = 20;
 const INTERACTIVE_SELECTOR =
   'button:not(.toolbar-grip), input, select, textarea, a, label, [contenteditable="true"], .color-popover, .styles-popover, .table-popover, .shapes-popover, .link-popover, .page-menu-popover, .columns-menu-popover';
@@ -61,11 +62,7 @@ export function initDockableToolbars({ appShellEl }) {
         };
       }
     }
-    try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
-    } catch {
-      // Ignore storage quota errors
-    }
+    saveSettings({ toolbarLayout: state });
   };
 
   const dockToolbar = (tb, dockName, insertBeforeNode = null) => {
@@ -98,9 +95,8 @@ export function initDockableToolbars({ appShellEl }) {
 
   const loadLayout = () => {
     try {
-      const raw = localStorage.getItem(STORAGE_KEY);
-      if (!raw) return;
-      const state = JSON.parse(raw);
+      const state = getSettingsSnapshot().toolbarLayout;
+      if (!state || typeof state !== 'object' || Object.keys(state).length === 0) return;
       const dockedByZone = { top: [], left: [], right: [] };
 
       toolbars.forEach((tb, defaultIdx) => {
@@ -280,19 +276,133 @@ export function initDockableToolbars({ appShellEl }) {
   }
 
   loadLayout();
-  syncTopDividers();
+
+  let hiddenIds = new Set(getSettingsSnapshot().toolbarHidden || []);
+
+  const saveHidden = () => {
+    saveSettings({ toolbarHidden: Array.from(hiddenIds) });
+  };
+
+  const applyHiddenState = () => {
+    for (const tb of toolbars) {
+      const id = tb.dataset.toolbarId;
+      tb.classList.toggle('is-toolbar-hidden', Boolean(id && hiddenIds.has(id)));
+    }
+    syncTopDividers();
+  };
+
+  applyHiddenState();
+
+  const ctxMenuEl = document.createElement('div');
+  ctxMenuEl.className = 'toolbar-context-menu';
+  ctxMenuEl.setAttribute('role', 'menu');
+  ctxMenuEl.setAttribute('aria-label', 'Show or hide toolbars');
+  document.body.appendChild(ctxMenuEl);
+
+  const closeCtxMenu = () => {
+    ctxMenuEl.classList.remove('is-open');
+    ctxMenuEl.innerHTML = '';
+  };
+
+  const isToolbarForCurrentMode = (tb) => {
+    const mode = appShellEl.dataset.mode || 'docx';
+    if (tb.dataset.richOnly === 'true') return mode === 'docx';
+    if (tb.dataset.mdOnly === 'true') return mode === 'md';
+    if (tb.dataset.htmlOnly === 'true') return mode === 'html';
+    if (tb.dataset.txtOnly === 'true') return mode === 'txt';
+    return true;
+  };
+
+  const openCtxMenu = (clientX, clientY) => {
+    ctxMenuEl.innerHTML = '';
+    const titleEl = document.createElement('div');
+    titleEl.className = 'toolbar-context-title';
+    titleEl.textContent = 'Toolbars';
+    ctxMenuEl.appendChild(titleEl);
+
+    const visibleForMode = toolbars.filter(isToolbarForCurrentMode);
+    for (const tb of visibleForMode) {
+      const id = tb.dataset.toolbarId;
+      if (!id) continue;
+      const labelText = tb.dataset.title || id;
+
+      const row = document.createElement('label');
+      row.className = 'toolbar-context-item';
+
+      const chk = document.createElement('input');
+      chk.type = 'checkbox';
+      chk.checked = !hiddenIds.has(id);
+      chk.addEventListener('change', () => {
+        if (chk.checked) {
+          hiddenIds.delete(id);
+        } else {
+          hiddenIds.add(id);
+        }
+        saveHidden();
+        applyHiddenState();
+      });
+
+      const span = document.createElement('span');
+      span.textContent = labelText;
+
+      row.append(chk, span);
+      ctxMenuEl.appendChild(row);
+    }
+
+    const divider = document.createElement('div');
+    divider.className = 'toolbar-context-divider';
+    ctxMenuEl.appendChild(divider);
+
+    const showAllBtn = document.createElement('button');
+    showAllBtn.type = 'button';
+    showAllBtn.className = 'toolbar-context-action';
+    showAllBtn.textContent = 'Show All Toolbars';
+    showAllBtn.addEventListener('click', () => {
+      hiddenIds.clear();
+      saveHidden();
+      applyHiddenState();
+      closeCtxMenu();
+    });
+    ctxMenuEl.appendChild(showAllBtn);
+
+    ctxMenuEl.classList.add('is-open');
+    const rect = ctxMenuEl.getBoundingClientRect();
+    const x = Math.min(clientX, Math.max(8, window.innerWidth - rect.width - 8));
+    const y = Math.min(clientY, Math.max(8, window.innerHeight - rect.height - 8));
+    ctxMenuEl.style.left = `${x}px`;
+    ctxMenuEl.style.top = `${y}px`;
+  };
+
+  appShellEl.addEventListener('contextmenu', (event) => {
+    const target = event.target;
+    if (!target?.closest('.dock-zone, .toolbar-group[data-toolbar-id]')) return;
+    event.preventDefault();
+    openCtxMenu(event.clientX, event.clientY);
+  });
+
+  document.addEventListener('mousedown', (event) => {
+    if (ctxMenuEl.classList.contains('is-open') && !ctxMenuEl.contains(event.target)) {
+      closeCtxMenu();
+    }
+  });
+
+  document.addEventListener('keydown', (event) => {
+    if (event.key === 'Escape' && ctxMenuEl.classList.contains('is-open')) {
+      closeCtxMenu();
+    }
+  });
+
+  window.addEventListener('blur', closeCtxMenu);
 
   return {
     syncDividers: syncTopDividers,
     resetLayout: () => {
-      try {
-        localStorage.removeItem(STORAGE_KEY);
-      } catch {
-        // Ignore storage errors
-      }
+      hiddenIds.clear();
       for (const tb of toolbars) {
         dockToolbar(tb, 'top');
       }
+      applyHiddenState();
+      saveSettings({ toolbarLayout: {}, toolbarHidden: [] });
     },
   };
 }

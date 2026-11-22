@@ -43,11 +43,24 @@ export function createImageTools({ wordEl, fileInputEl, pageShapes }) {
   function handlePaste(event) {
     const items = Array.from(event.clipboardData?.items || []);
     const imageItem = items.find((item) => item.kind === 'file' && item.type.startsWith('image/'));
-    if (!imageItem) return false;
-    const file = imageItem.getAsFile();
+    let file = imageItem ? imageItem.getAsFile() : null;
+    if (!file) {
+      const files = Array.from(event.clipboardData?.files || []);
+      file = files.find((f) => f.type?.startsWith('image/')) || null;
+    }
     if (!file) return false;
     event.preventDefault();
     return insertImageFile(file);
+  }
+
+  function handleDrop(event) {
+    const files = Array.from(event.dataTransfer?.files || []).filter((f) =>
+      f.type?.startsWith('image/')
+    );
+    if (files.length === 0) return false;
+    event.preventDefault();
+    files.forEach((file) => insertImageFile(file));
+    return true;
   }
 
   function openPicker() {
@@ -66,6 +79,8 @@ export function createImageTools({ wordEl, fileInputEl, pageShapes }) {
   return {
     openPicker,
     insertImageFile,
+    insertDataUrl,
     handlePaste,
+    handleDrop,
   };
 }

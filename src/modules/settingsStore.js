@@ -1,6 +1,5 @@
-import { BaseDirectory, exists, mkdir, readTextFile, writeTextFile } from '@tauri-apps/plugin-fs';
+import { invoke } from '@tauri-apps/api/core';
 
-const SETTINGS_FILE = 'settings.json';
 const MAX_RECENT_DOCUMENTS = 25;
 const DEFAULTS = {
   startIn: 'document',
@@ -23,6 +22,11 @@ const DEFAULTS = {
   customTemplates: [],
   recentDocuments: [],
   lastSeenVersion: '',
+  toolbarLayout: {},
+  toolbarHidden: [],
+  inspectorOpen: false,
+  inspectorLayout: { mode: 'docked', dock: 'right', x: null, y: 112 },
+  recoveryDraft: null,
   window: {
     width: 1120,
     height: 760,
@@ -32,189 +36,70 @@ const DEFAULTS = {
   },
 };
 
-let cachedSettings = {
-  ...DEFAULTS,
-  recentDocuments: [],
-  window: { ...DEFAULTS.window },
-};
-
-function readLocalCustomStylesFallback() {
-  try {
-    const raw = localStorage.getItem('wordflow-custom-styles');
-    const parsed = raw ? JSON.parse(raw) : [];
-    return Array.isArray(parsed) ? parsed : [];
-  } catch {
-    return [];
-  }
-}
-
-function readLocalCustomTemplatesFallback() {
-  try {
-    const raw = localStorage.getItem('wordflow-custom-templates');
-    const parsed = raw ? JSON.parse(raw) : [];
-    return Array.isArray(parsed) ? parsed : [];
-  } catch {
-    return [];
-  }
-}
-
-function readLocalRecentFallback() {
-  try {
-    const raw = localStorage.getItem('wordflow-recent-docs');
-    const parsed = raw ? JSON.parse(raw) : [];
-    return Array.isArray(parsed) ? parsed : [];
-  } catch {
-    return [];
-  }
-}
-
-function readLocalFallback() {
+function cloneDefaults() {
   return {
-    startIn: localStorage.getItem('wordflow-start-in') || DEFAULTS.startIn,
-    defaultFont: localStorage.getItem('wordflow-default-font') || DEFAULTS.defaultFont,
-    defaultFontSize: localStorage.getItem('wordflow-default-size') || DEFAULTS.defaultFontSize,
-    defaultLineSpacing:
-      localStorage.getItem('wordflow-default-line-spacing') || DEFAULTS.defaultLineSpacing,
-    defaultPageMargins:
-      localStorage.getItem('wordflow-default-page-margins') || DEFAULTS.defaultPageMargins,
-    defaultMode: localStorage.getItem('wordflow-default-mode') || DEFAULTS.defaultMode,
-    pageSize: localStorage.getItem('wordflow-page-size') || DEFAULTS.pageSize,
-    pageOrientation:
-      localStorage.getItem('wordflow-page-orientation') || DEFAULTS.pageOrientation,
-    measurementUnit:
-      localStorage.getItem('wordflow-measurement-unit') || DEFAULTS.measurementUnit,
-    tabsEnabled:
-      localStorage.getItem('wordflow-tabs-enabled') !== null
-        ? localStorage.getItem('wordflow-tabs-enabled') === 'true'
-        : DEFAULTS.tabsEnabled,
-    theme: localStorage.getItem('wordflow-ui-theme') || DEFAULTS.theme,
-    spellcheckEnabled:
-      localStorage.getItem('wordflow-spellcheck-enabled') !== null
-        ? localStorage.getItem('wordflow-spellcheck-enabled') === 'true'
-        : DEFAULTS.spellcheckEnabled,
-    grammarEnabled:
-      localStorage.getItem('wordflow-grammar-enabled') !== null
-        ? localStorage.getItem('wordflow-grammar-enabled') === 'true'
-        : DEFAULTS.grammarEnabled,
-    autoSaveInterval:
-      localStorage.getItem('wordflow-autosave-interval') !== null
-        ? Number(localStorage.getItem('wordflow-autosave-interval')) || 0
-        : DEFAULTS.autoSaveInterval,
-    defaultZoom: Number(localStorage.getItem('wordflow-default-zoom')) || DEFAULTS.defaultZoom,
-    zoom: Number(localStorage.getItem('wordflow-doc-zoom')) || DEFAULTS.zoom,
-    customStyles: readLocalCustomStylesFallback(),
-    customTemplates: readLocalCustomTemplatesFallback(),
-    recentDocuments: readLocalRecentFallback(),
-    lastSeenVersion: localStorage.getItem('wordflow-last-seen-version') || '',
+    ...DEFAULTS,
+    customStyles: [],
+    customTemplates: [],
+    recentDocuments: [],
+    toolbarLayout: {},
+    toolbarHidden: [],
+    inspectorLayout: { ...DEFAULTS.inspectorLayout },
+    window: { ...DEFAULTS.window },
   };
 }
 
-function writeLocalFallback(settings) {
-  if (settings.startIn) {
-    localStorage.setItem('wordflow-start-in', settings.startIn);
-  }
-  if (settings.defaultFont) {
-    localStorage.setItem('wordflow-default-font', settings.defaultFont);
-  }
-  if (settings.defaultFontSize) {
-    localStorage.setItem('wordflow-default-size', settings.defaultFontSize);
-  }
-  if (settings.defaultLineSpacing) {
-    localStorage.setItem('wordflow-default-line-spacing', String(settings.defaultLineSpacing));
-  }
-  if (settings.defaultPageMargins) {
-    localStorage.setItem('wordflow-default-page-margins', String(settings.defaultPageMargins));
-  }
-  if (settings.defaultMode) {
-    localStorage.setItem('wordflow-default-mode', settings.defaultMode);
-  }
-  if (settings.pageSize) {
-    localStorage.setItem('wordflow-page-size', settings.pageSize);
-  }
-  if (settings.pageOrientation) {
-    localStorage.setItem('wordflow-page-orientation', settings.pageOrientation);
-  }
-  if (settings.measurementUnit) {
-    localStorage.setItem('wordflow-measurement-unit', settings.measurementUnit);
-  }
-  if (typeof settings.tabsEnabled === 'boolean') {
-    localStorage.setItem('wordflow-tabs-enabled', String(settings.tabsEnabled));
-  }
-  if (settings.theme) {
-    localStorage.setItem('wordflow-ui-theme', settings.theme);
-  }
-  if (typeof settings.spellcheckEnabled === 'boolean') {
-    localStorage.setItem('wordflow-spellcheck-enabled', String(settings.spellcheckEnabled));
-  }
-  if (typeof settings.grammarEnabled === 'boolean') {
-    localStorage.setItem('wordflow-grammar-enabled', String(settings.grammarEnabled));
-  }
-  if (typeof settings.autoSaveInterval === 'number' && Number.isFinite(settings.autoSaveInterval)) {
-    localStorage.setItem('wordflow-autosave-interval', String(settings.autoSaveInterval));
-  }
-  if (typeof settings.defaultZoom === 'number' && Number.isFinite(settings.defaultZoom)) {
-    localStorage.setItem('wordflow-default-zoom', String(settings.defaultZoom));
-  }
-  if (Array.isArray(settings.customStyles)) {
-    try {
-      localStorage.setItem('wordflow-custom-styles', JSON.stringify(settings.customStyles));
-    } catch {
-      // Ignore storage quota errors.
-    }
-  }
-  if (Array.isArray(settings.customTemplates)) {
-    try {
-      localStorage.setItem('wordflow-custom-templates', JSON.stringify(settings.customTemplates));
-    } catch {
-      // Ignore storage quota errors.
-    }
-  }
-  if (Array.isArray(settings.recentDocuments)) {
-    try {
-      localStorage.setItem('wordflow-recent-docs', JSON.stringify(settings.recentDocuments));
-    } catch {
-      // Ignore storage quota errors.
-    }
-  }
-  if (typeof settings.lastSeenVersion === 'string') {
-    localStorage.setItem('wordflow-last-seen-version', settings.lastSeenVersion);
-  }
+let cachedSettings = cloneDefaults();
+
+export function getSettingsSnapshot() {
+  return {
+    ...cachedSettings,
+    customStyles: [...(cachedSettings.customStyles || [])],
+    customTemplates: [...(cachedSettings.customTemplates || [])],
+    recentDocuments: [...(cachedSettings.recentDocuments || [])],
+    toolbarLayout: { ...(cachedSettings.toolbarLayout || {}) },
+    toolbarHidden: [...(cachedSettings.toolbarHidden || [])],
+    inspectorLayout: {
+      ...DEFAULTS.inspectorLayout,
+      ...(cachedSettings.inspectorLayout || {}),
+    },
+    window: { ...DEFAULTS.window, ...(cachedSettings.window || {}) },
+  };
 }
 
 export async function loadSettings() {
-  const fallback = readLocalFallback();
   try {
-    const hasFile = await exists(SETTINGS_FILE, { baseDir: BaseDirectory.AppConfig });
-    if (!hasFile) {
-      cachedSettings = {
-        ...DEFAULTS,
-        ...fallback,
-        window: { ...DEFAULTS.window },
-      };
+    const raw = await invoke('read_settings_file');
+    if (!raw || !raw.trim()) {
+      cachedSettings = cloneDefaults();
       await saveSettings(cachedSettings);
-      return { ...cachedSettings, window: { ...cachedSettings.window } };
+      return getSettingsSnapshot();
     }
-    const raw = await readTextFile(SETTINGS_FILE, { baseDir: BaseDirectory.AppConfig });
     const parsed = JSON.parse(raw);
     const valid = parsed && typeof parsed === 'object' ? parsed : {};
     cachedSettings = {
-      ...DEFAULTS,
-      ...fallback,
+      ...cloneDefaults(),
       ...valid,
+      toolbarLayout:
+        valid.toolbarLayout && typeof valid.toolbarLayout === 'object'
+          ? { ...valid.toolbarLayout }
+          : {},
+      toolbarHidden: Array.isArray(valid.toolbarHidden) ? [...valid.toolbarHidden] : [],
+      inspectorLayout: {
+        ...DEFAULTS.inspectorLayout,
+        ...(valid.inspectorLayout && typeof valid.inspectorLayout === 'object'
+          ? valid.inspectorLayout
+          : {}),
+      },
       window: {
         ...DEFAULTS.window,
         ...(valid.window && typeof valid.window === 'object' ? valid.window : {}),
       },
     };
-    writeLocalFallback(cachedSettings);
-    return { ...cachedSettings, window: { ...cachedSettings.window } };
+    return getSettingsSnapshot();
   } catch {
-    cachedSettings = {
-      ...DEFAULTS,
-      ...fallback,
-      window: { ...DEFAULTS.window },
-    };
-    return { ...cachedSettings, window: { ...cachedSettings.window } };
+    cachedSettings = cloneDefaults();
+    return getSettingsSnapshot();
   }
 }
 
@@ -222,20 +107,21 @@ export async function saveSettings(patch) {
   cachedSettings = {
     ...cachedSettings,
     ...patch,
+    inspectorLayout: patch?.inspectorLayout
+      ? { ...cachedSettings.inspectorLayout, ...patch.inspectorLayout }
+      : { ...cachedSettings.inspectorLayout },
     window: patch?.window
       ? { ...cachedSettings.window, ...patch.window }
       : { ...cachedSettings.window },
   };
-  writeLocalFallback(cachedSettings);
   try {
-    await mkdir('', { baseDir: BaseDirectory.AppConfig, recursive: true });
-    await writeTextFile(SETTINGS_FILE, JSON.stringify(cachedSettings, null, 2), {
-      baseDir: BaseDirectory.AppConfig,
+    await invoke('write_settings_file', {
+      contents: JSON.stringify(cachedSettings, null, 2),
     });
   } catch {
-    // Fallback to localStorage when running outside Tauri FS scope
+    // Ignore write errors outside Tauri runtime
   }
-  return { ...cachedSettings, window: { ...cachedSettings.window } };
+  return getSettingsSnapshot();
 }
 
 export function getRecentDocuments() {

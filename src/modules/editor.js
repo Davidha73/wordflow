@@ -27,6 +27,7 @@ import { applyTxtAction } from './txtToolbar.js';
 import { createInspectorPane } from './inspectorPane.js';
 import { createStyleEditorModal } from './styleEditorModal.js';
 import { repositionGrammarHighlights } from './grammarHighlights.js';
+import { decodeFlowClipboardHtml } from './flowLink.js';
 
 const FALLBACK_FONTS = [
   'Segoe UI',
@@ -182,9 +183,9 @@ export function createEditor({ onChange, onModeChange, onFontsLoaded }) {
   const dismissWarningBtn = document.getElementById('btn-dismiss-warning');
 
   let mode = 'docx';
-  let defaultMode = localStorage.getItem('wordflow-default-mode') || 'docx';
-  let defaultFont = localStorage.getItem('wordflow-default-font') || 'Georgia';
-  let defaultFontSize = localStorage.getItem('wordflow-default-size') || '12pt';
+  let defaultMode = 'docx';
+  let defaultFont = 'Georgia';
+  let defaultFontSize = '12pt';
   let defaultLineSpacing = 1.15;
   let pageMarginInches = 1;
   let activeTextColor = '#1a1a1a';
@@ -1705,6 +1706,21 @@ export function createEditor({ onChange, onModeChange, onFontsLoaded }) {
       document.execCommand('insertHTML', false, container.innerHTML);
     });
 
+    wordEl.addEventListener('dragover', (event) => {
+      if (mode !== 'docx') return;
+      const hasFiles = Array.from(event.dataTransfer?.types || []).includes('Files');
+      if (hasFiles) {
+        event.preventDefault();
+      }
+    });
+
+    wordEl.addEventListener('drop', (event) => {
+      if (mode !== 'docx') return;
+      if (imageTools.handleDrop(event)) {
+        event.stopPropagation();
+      }
+    });
+
     wordEl.addEventListener('input', (event) => {
       if (suppressRichInputHistory) return;
       masterRichHtml = sanitizeHtml(wordEl.innerHTML);
@@ -2389,6 +2405,32 @@ export function createEditor({ onChange, onModeChange, onFontsLoaded }) {
     pageBreaks.sync();
   }
 
+  function applyLoadedLayout({ pageMarginInches: loadedMargin, lineSpacing: loadedSpacing } = {}) {
+    if (typeof loadedMargin === 'number' && Number.isFinite(loadedMargin) && loadedMargin > 0) {
+      pageMarginInches = loadedMargin;
+      wordEl.style.setProperty('--doc-margin', `${loadedMargin}in`);
+      if (pageMarginsSelectEl) {
+        const strVal = String(loadedMargin);
+        const hasOption = Array.from(pageMarginsSelectEl.options).some((o) => o.value === strVal);
+        if (hasOption) {
+          pageMarginsSelectEl.value = strVal;
+        }
+      }
+      pageBreaks.sync();
+    }
+    if (typeof loadedSpacing === 'number' && Number.isFinite(loadedSpacing) && loadedSpacing > 0) {
+      defaultLineSpacing = loadedSpacing;
+      wordEl.style.setProperty('--doc-line-height', String(loadedSpacing));
+      if (lineSpacingSelectEl) {
+        const strVal = loadedSpacing === 1 ? '1.0' : loadedSpacing === 2 ? '2.0' : String(loadedSpacing);
+        const hasOption = Array.from(lineSpacingSelectEl.options).some((o) => o.value === strVal);
+        if (hasOption) {
+          lineSpacingSelectEl.value = strVal;
+        }
+      }
+    }
+  }
+
   function setMeasurementUnit(unit) {
     const unitSelectEl = document.getElementById('shape-size-unit');
     if (!unitSelectEl || !['mm', 'cm', 'in'].includes(unit)) return;
@@ -2443,6 +2485,21 @@ export function createEditor({ onChange, onModeChange, onFontsLoaded }) {
   if (fontSizeSelectEl) fontSizeSelectEl.value = defaultFontSize;
   loadSystemFonts();
 
+  wordEl.addEventListener(
+    'paste',
+    (event) => {
+      if (mode !== 'docx') return;
+      const html = event.clipboardData?.getData('text/html') || '';
+      const flowPayload = decodeFlowClipboardHtml(html);
+      if (flowPayload?.kind === 'shapes' && Array.isArray(flowPayload.shapes)) {
+        event.preventDefault();
+        event.stopPropagation();
+        pageShapes.importFlowShapes(flowPayload.shapes);
+      }
+    },
+    true
+  );
+
   return {
     getMode: () => mode,
     setMode,
@@ -2458,6 +2515,8 @@ export function createEditor({ onChange, onModeChange, onFontsLoaded }) {
     setDefaultFontSize,
     setDefaultLineSpacing,
     setDefaultPageMargins,
+    applyLoadedLayout,
+    insertImageDataUrl: (dataUrl, altText) => imageTools.insertDataUrl(dataUrl, altText),
     setMeasurementUnit,
     setDefaultMode,
     setProofingOptions: ({ spellcheck, grammar } = {}) => {
@@ -2496,5 +2555,57 @@ export function createEditor({ onChange, onModeChange, onFontsLoaded }) {
     syncForPrint,
     clear,
     getStats,
+    getFlowExportPayload: () => {
+      const shapePayload = pageShapes.getSelectedShapesPayload?.();
+      if (shapePayload) return shapePayload;
+      if (mode !== 'docx') {
+        const start = sourceEl.selectionStart ?? 0;
+        const end = sourceEl.selectionEnd ?? 0;
+        const text = (end > start ? sourceEl.value.slice(start, end) : sourceEl.value).trim();
+        return text ? { source: 'wordflow', kind: 'text', text } : null;
+      }
+      const sel = window.getSelection();
+      let text = sel?.toString()?.trim() || '';
+      let anchorEl =
+        sel?.anchorNode?.nodeType === Node.ELEMENT_NODE
+          ? sel.anchorNode
+          : sel?.anchorNode?.parentElement;
+      if (!text && anchorEl && wordEl.contains(anchorEl)) {
+        const blockEl = anchorEl.closest('p, h1, h2, h3, h4, h5, h6, li, blockquote') || anchorEl;
+        text = blockEl.textContent?.trim() || '';
+        anchorEl = blockEl;
+      }
+      if (!text) return null;
+      const computed = anchorEl ? window.getComputedStyle(anchorEl) : null;
+      return {
+        source: 'wordflow',
+        kind: 'text',
+        text,
+        textStyle: computed
+          ? {
+              fontFamily: computed.fontFamily,
+              fontSize: Math.round(Number.parseFloat(computed.fontSize) || 14),
+              fontWeight: Number(computed.fontWeight) >= 600 || computed.fontWeight === 'bold' ? 'bold' : 'normal',
+              textColor: computed.color || '#1a1a1a',
+              textAlign: computed.textAlign || 'left',
+            }
+          : undefined,
+      };
+    },
+    importFlowPayload: (payload) => {
+      if (!payload) return false;
+      if (payload.kind === 'shapes' && Array.isArray(payload.shapes)) {
+        if (mode !== 'docx') setMode('docx');
+        return pageShapes.importFlowShapes(payload.shapes);
+      }
+      if (payload.kind === 'text' && payload.text) {
+        if (mode !== 'docx') setMode('docx');
+        wordEl.focus({ preventScroll: true });
+        document.execCommand('insertText', false, String(payload.text));
+        recordRichMutation();
+        return true;
+      }
+      return false;
+    },
   };
 }

@@ -1,4 +1,3 @@
-const THEME_STORAGE_KEY = 'wordflow-ui-theme';
 const ZOOM_MIN = 50;
 const ZOOM_MAX = 200;
 const ZOOM_STEP = 10;
@@ -53,21 +52,10 @@ export function createStatusBar({ onZoomChange } = {}) {
     const normalized = theme === 'dark' || theme === 'system' ? theme : 'light';
     currentThemePref = normalized;
     document.documentElement.dataset.theme = resolveEffectiveTheme(normalized);
-    try {
-      localStorage.setItem(THEME_STORAGE_KEY, normalized);
-    } catch {
-      // Ignore storage errors in restricted contexts
-    }
   }
 
   function initTheme() {
-    let saved = 'light';
-    try {
-      saved = localStorage.getItem(THEME_STORAGE_KEY) || 'light';
-    } catch {
-      saved = 'light';
-    }
-    applyTheme(saved);
+    applyTheme('light');
     colorSchemeMedia?.addEventListener('change', () => {
       if (currentThemePref === 'system') {
         document.documentElement.dataset.theme = resolveEffectiveTheme('system');
