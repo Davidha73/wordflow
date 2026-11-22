@@ -83,6 +83,25 @@ export function getGrammarIssueAtPoint(clientX, clientY) {
   return null;
 }
 
+export function getSpellingIssueAtPoint(clientX, clientY) {
+  for (const entry of activeOverlayEntries) {
+    if (entry.issue?.kind !== 'Spelling') continue;
+    const rects = entry.range.getClientRects();
+    for (let i = 0; i < rects.length; i += 1) {
+      const r = rects[i];
+      if (
+        clientX >= r.left - 3 &&
+        clientX <= r.right + 3 &&
+        clientY >= r.top - 3 &&
+        clientY <= r.bottom + 6
+      ) {
+        return entry;
+      }
+    }
+  }
+  return null;
+}
+
 function resolveDomPoint(segments, globalOffset, isEnd = false) {
   for (let i = 0; i < segments.length; i += 1) {
     const seg = segments[i];

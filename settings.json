@@ -61,7 +61,7 @@
       "mode": "txt",
       "size": 3096,
       "modifiedAt": "2026-09-16T11:35:06.000Z",
-      "openedAt": "2026-11-22T15:28:41.278Z"
+      "openedAt": "2026-11-22T17:28:51.912Z"
     },
     {
       "path": "/Users/davidharries/Library/CloudStorage/GoogleDrive-davidha73@googlemail.com/My Drive/Cycle7.html",
@@ -77,12 +77,17 @@
   "toolbarHidden": [],
   "inspectorOpen": true,
   "inspectorLayout": {
-    "mode": "floating",
+    "mode": "docked",
     "dock": "right",
     "x": 1165,
     "y": 207.46484375
   },
-  "recoveryDraft": null,
+  "recoveryDraft": {
+    "mode": "docx",
+    "content": "<p>Build a lightweight personal desktop assistant called \"Office Junior\" using Electron and Vanilla JavaScript, powered by the Gemini 3.5 Flash-Lite API and a native local whisper.cpp process for push-to-talk speech-to-text.</p>\n<p><br></p>\n<p>Project Constraints &amp; Architecture:</p>\n<p>1. Tech Stack: Electron, Vanilla HTML/CSS/JS (no heavy frontend frameworks), Node.js built-ins (fs, path, child_process, os), and @google/genai.</p>\n<p>2. Architecture:</p>\n<p>   - main.js: Electron window lifecycle, IPC handlers, safe tool execution, and local whisper.cpp child process execution.</p>\n<p>   - preload.js: Context-isolated bridge exposing safe IPC channels to the renderer.</p>\n<p>   - renderer/: index.html, styles.css, and app.js for a clean mid-blue semi transparent chat UI with a push-to-talk button, message stream, and settings drawer.</p>\n<p>   - memory/: A local folder containing USER.md (profile &amp; rules), LONGTERM.md (persistent facts), and MEMORY.md (working memory).</p>\n<p>   - bin/: Folder holding the compiled whisper.cpp binary and ggml-base.en.bin model file (include a setup script or instructions to fetch/place them).</p>\n<p><br></p>\n<p>Key Features to Implement:</p>\n<p><br></p>\n<p>1. Speech-to-Text via whisper.cpp:</p>\n<p>   - In the renderer, implement a push-to-talk mechanism (holding the Spacebar or a dedicated mic button) using the Web Audio API / MediaRecorder to capture mono 16 kHz WAV audio.</p>\n<p>   - On release, send the audio buffer over IPC to main.js.</p>\n<p>   - In main.js, write the buffer to a temporary file, run whisper.cpp as a child process against the audio file, capture stdout as the transcribed text, delete the temp file, and return the transcription to the UI.</p>\n<p><br></p>\n<p>2. Brain &amp; Context Orchestration:</p>\n<p>   - Use the Gemini 3.5 Flash-Lite model via @google/genai.</p>\n<p>   - On each chat turn, read memory/USER.md, memory/LONGTERM.md, and memory/MEMORY.md to construct the systemInstruction.</p>\n<p style=\"\">   - Handle multi-turn conversation history.</p>\n<p><br></p>\n<p>3. Native Tools (Function Calling):</p>\n<p>   - Scaffold Project: Accepts a folder path, project name, and an array of subdirectories/starter files to create on disk.</p>\n<p>   - Manage File: Safely read, write, and delete text files within the user's home or project directories.</p>\n<p>   - Update Memory: Allows the model to autonomously append new working notes or learned facts to memory/MEMORY.md or memory/LONGTERM.md with date stamps.</p>\n<p>   - Add Calendar Event: Accepts title and date/time parameters and logs the action (or runs an OS calendar trigger).</p>\n<p><br></p>\n<p>4. Text-to-Speech (TTS):</p>\n<p>   - Use the browser engine's built-in Web Speech Synthesis API (window.speechSynthesis) in app.js to automatically speak incoming model replies using the default system voice. Add a toggle in the UI to mute/unmute audio replies.</p>\n<p><br></p>\n<p>5. UI &amp; Settings:</p>\n<p>   - Clean mid-blue semi transparent chat interface with auto-scrolling message list and loading indicators.</p>\n<p>   - A settings modal/drawer allowing the user to view and edit memory/USER.md directly from the UI and configure their GEMINI_API_KEY.</p>\n<p><br></p>\n<p>Please create all required directories and files, initialize package.json, install dependencies, and launch the application using `npm start`.</p><p><br></p><p>This is an test.</p><p><br></p>",
+    "filePath": "/Users/davidharries/Library/CloudStorage/GoogleDrive-davidha73@googlemail.com/My Drive/Office Junior.txt",
+    "savedAt": 1795368639483
+  },
   "window": {
     "width": 2898,
     "height": 2074,

@@ -6,7 +6,9 @@ use font_kit::source::SystemSource;
 use serde::Deserialize;
 use tauri::Manager;
 
+#[path = "../../../FlowDash/src-tauri/src/grammar.rs"]
 mod grammar;
+#[path = "../../../FlowDash/src-tauri/src/spellcheck.rs"]
 mod spellcheck;
 
 #[derive(Deserialize)]

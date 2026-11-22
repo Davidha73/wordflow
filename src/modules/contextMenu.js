@@ -4,7 +4,7 @@
 
 import { invoke } from '@tauri-apps/api/core';
 import { createIconPlaceholder, initIcons } from './icons.js';
-import { getGrammarIssueAtPoint } from './grammarHighlights.js';
+import { getGrammarIssueAtPoint, getSpellingIssueAtPoint } from './grammarHighlights.js';
 
 export function createContextMenu({
   wordEl,
@@ -452,8 +452,9 @@ export function createContextMenu({
       addGrammarSubmenu(editRow, grammarMatch);
     } else {
       const wordInfo = getWordAtPoint(event.clientX, event.clientY);
-      if (wordInfo) {
-        addSpellingSubmenu(editRow, wordInfo);
+      const spellingMatch = getSpellingIssueAtPoint(event.clientX, event.clientY);
+      if (wordInfo || spellingMatch) {
+        addSpellingSubmenu(editRow, wordInfo, spellingMatch);
       }
     }
   }
@@ -622,15 +623,21 @@ export function createContextMenu({
     return { word, range: wordRange };
   }
 
-  function addSpellingSubmenu(row, wordInfo) {
+  function addSpellingSubmenu(row, wordInfo, spellingIssue = null) {
     addRowSeparator(row);
     const wrap = document.createElement('div');
     wrap.className = 'context-menu-spelling-wrap';
 
+    const targetWord = spellingIssue?.issue?.problem_text || wordInfo?.word || '';
+    const targetRange = spellingIssue?.range || wordInfo?.range || null;
+    const issueSuggestions = Array.isArray(spellingIssue?.issue?.suggestions)
+      ? spellingIssue.issue.suggestions
+      : [];
+
     const btn = document.createElement('button');
     btn.type = 'button';
     btn.className = 'context-menu-spelling-btn';
-    btn.title = `Spelling suggestions for "${wordInfo.word}"`;
+    btn.title = `Spelling suggestions for "${targetWord}"`;
     btn.setAttribute('aria-haspopup', 'menu');
     btn.setAttribute('aria-expanded', 'false');
     btn.appendChild(createIconPlaceholder('sparkles', 'lucide-xs'));
@@ -659,12 +666,18 @@ export function createContextMenu({
     wrap.appendChild(popover);
     row.appendChild(wrap);
 
-    invoke('check_word_spelling', { word: wordInfo.word })
+    invoke('check_word_spelling', { word: targetWord })
+      .catch(() => [])
       .then((suggestions) => {
         if (!isOpen) return;
         popover.innerHTML = '';
-        const list = Array.isArray(suggestions) ? suggestions : [];
-        if (list.length === 0) {
+        const list = Array.from(
+          new Set([
+            ...issueSuggestions,
+            ...(Array.isArray(suggestions) ? suggestions : []),
+          ])
+        );
+        if (list.length === 0 && !spellingIssue) {
           const okItem = document.createElement('div');
           okItem.className = 'context-menu-spelling-status';
           okItem.textContent = 'No spelling issues';
@@ -681,7 +694,7 @@ export function createContextMenu({
           item.textContent = suggestion;
           item.addEventListener('mousedown', (e) => e.preventDefault());
           item.addEventListener('click', () => {
-            restoreRichRange(wordInfo.range);
+            restoreRichRange(targetRange);
             document.execCommand('insertText', false, suggestion);
             onRichMutate?.();
             close();
@@ -693,11 +706,11 @@ export function createContextMenu({
         addBtn.type = 'button';
         addBtn.className = 'context-menu-spelling-item is-secondary';
         addBtn.setAttribute('role', 'menuitem');
-        addBtn.textContent = `Add "${wordInfo.word}"`;
+        addBtn.textContent = `Add "${targetWord}"`;
         addBtn.addEventListener('mousedown', (e) => e.preventDefault());
         addBtn.addEventListener('click', async () => {
           try {
-            await invoke('add_word_to_dictionary', { word: wordInfo.word });
+            await invoke('add_word_to_dictionary', { word: targetWord });
             onRefreshGrammar?.();
           } catch {
             // Ignore dictionary save errors
@@ -705,14 +718,6 @@ export function createContextMenu({
           close();
         });
         popover.appendChild(addBtn);
-      })
-      .catch(() => {
-        if (!isOpen) return;
-        popover.innerHTML = '';
-        const errItem = document.createElement('div');
-        errItem.className = 'context-menu-spelling-status';
-        errItem.textContent = 'Spellcheck unavailable';
-        popover.appendChild(errItem);
       });
   }
 
